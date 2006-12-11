@@ -1,5 +1,8 @@
 Revision history for Perl extension Lemonldap::NG::Manager.
 
+0.02  Mon Dec  4 7:57:25 2006
+	- little doc
+
 0.01  Sun Dec  3 13:23:58 2006
 	- original version; created by h2xs 1.23 with options
 		-Xn Lemonldap::NG::Manager

@@ -9,7 +9,7 @@ use Lemonldap::NG::Manager::Conf;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub new {
     my($class,$args) = @_;
@@ -154,7 +154,6 @@ sub printXmlConf {
     my $sessionStorage = $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item};
     my $globalStorageOptions = $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item}->{globalStorageOptions}->{item};
     my $authParams = $tree->{item}->{item}->{generalParameters}->{item}->{authParams}->{item};
-#TODO portal authentication securedCookie
     $authParams->{authentication} = $self->xmlField( "value", $config->{authentication} || 'ldap', "Type d'authentification" );
     $authParams->{portal} = $self->xmlField( "value", $config->{portal} || 'http://portal/', "Portail" );
     $authParams->{securedCookie} = $self->xmlField( "value", $config->{securedCookie} || 0, "Cookie sécurisé (SSL)" );
@@ -332,55 +331,52 @@ sub config {
     return $self->{_config};
 }
 
-# Preloaded methods go here.
-
-# Autoload methods go after =cut, and are processed by the autosplit program.
-
 1;
 __END__
-# Below is stub documentation for your module. You'd better edit it!
+# Autoload methods go after =cut, and are processed by the autosplit program.
 
 =head1 NAME
 
-Lemonldap::NG::Manager - Perl extension for blah blah blah
+Lemonldap::NG::Manager - Perl extension for managing Lemonldap::NG Web-SSO
+system.
 
 =head1 SYNOPSIS
 
   use Lemonldap::NG::Manager;
-  blah blah blah
+  my $h=new Lemonldap::NG::Manager(
+      {
+        configStorage=>{
+            type=>'File',
+            dirName=>"/tmp/",
+        },
+        dhtmlXTreeImageLocation=> "/devel/img/",
+        jsFile => /path/to/lemonldap-ng-manager.js,
+      }
+    ) or die "Unable to start, see Apache logs";
+
+  # Simple
+  $h->doall();
 
 =head1 DESCRIPTION
 
-Stub documentation for Lemonldap::NG::Manager, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
-
-Blah blah blah.
+Lemonldap::NG::Manager provides a web interface to manage Lemonldap::NG Web-SSO
+system.
 
 =head2 EXPORT
 
 None by default.
 
-
-
 =head1 SEE ALSO
 
-Mention other useful documentation such as the documentation of
-related modules or operating system documentation (such as man pages
-in UNIX), or any relevant external documentation such as RFCs or
-standards.
-
-If you have a mailing list set up for your module, mention it here.
-
-If you have a web site set up for your module, mention it here.
+L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>
 
 =head1 AUTHOR
 
-Najette, E<lt>najette@E<gt>
+Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006 by Najette
+Copyright (C) 2006 by Xavier Guimard
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,

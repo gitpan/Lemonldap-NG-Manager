@@ -6,7 +6,7 @@ use MIME::Base64;
 use Time::Local;
 use CGI;
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 our @ISA = qw(CGI);
 
@@ -46,29 +46,35 @@ __END__
 
 =head1 NAME
 
-Lemonldap::NG::Manager::Base - Base module for building Lemonldap::NG
-configuration interface
+Lemonldap::NG::Manager::Base - Simple module to extend L<CGI> to manage
+HTTP "If-Modified-Since / 304 Not Modified" system.
 
 =head1 SYNOPSIS
 
-  use Lemonldap::NG::Base;
+  use Lemonldap::NG::Manager::Base;
+  
+  my $cgi = Lemonldap::NG::Manager::Base->new();
+  $cgi->header_public($ENV{SCRIPT_FILENAME});
+  print "<html><head><title>Static page</title></head>";
+  ...
 
 =head1 DESCRIPTION
 
-Lemonldap::NG::Portal::Simple is the base module for building Lemonldap::NG
-compatible portals. You can use it either by inheritance or by writing
-anonymous methods like in the example above.
-
-See L<Lemonldap::NG::Portal::SharedConf::DBI> for a complete example of use of
-Lemonldap::Portal::* libraries.
+Lemonldap::NG::Manager::Base just add header_public subroutine to CGI module to
+avoid printing HTML elements that can be cached.
 
 =head1 METHODS
+
+=head2 header_public
+
+header_public works like header (see L<CGI>) but the first argument has to be
+a filename: the last modify date of this file is used for reference.
 
 =head2 EXPORT
 
 =head1 SEE ALSO
 
-L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>, L<CGI>
+L<Lemonldap::NG::Manager>, L<CGI>
 
 =head1 AUTHOR
 
