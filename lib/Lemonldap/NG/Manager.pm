@@ -3,13 +3,13 @@ package Lemonldap::NG::Manager;
 use strict;
 
 use XML::Simple;
-use AutoLoader qw(AUTOLOAD);
+#use AutoLoader qw(AUTOLOAD);
 use Lemonldap::NG::Manager::Base;
 use Lemonldap::NG::Manager::Conf;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 sub new {
     my($class,$args) = @_;
@@ -331,8 +331,8 @@ sub config {
     return $self->{_config};
 }
 
-1;
-__END__
+#1;
+#__END__
 # Autoload methods go after =cut, and are processed by the autosplit program.
 
 =head1 NAME
