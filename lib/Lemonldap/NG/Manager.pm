@@ -12,7 +12,7 @@ require Lemonldap::NG::Manager::Help;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.4';
+our $VERSION = '0.43';
 
 sub new {
     my ( $class, $args ) = @_;
@@ -120,38 +120,38 @@ sub printXmlConf {
         item => {
             id   => 'root',
             open => 1,
-            text => &configuration . " $config->{cfgNum}",
+            text => &txt_configuration . " $config->{cfgNum}",
             item => {
                 generalParameters => {
-                    text => &generalParameters,
+                    text => &txt_generalParameters,
                     item => {
                         exportedVars => {
-                            text => &exportedVars,
+                            text => &txt_exportedVars,
                             item => {},
                         },
-			macros => {
-			    text => &macros,
-			},
+                        macros => {
+                            text => &txt_macros,
+                        },
                         ldapParameters => {
-                            text => &ldapParameters,
+                            text => &txt_ldapParameters,
                             item => {},
                         },
                         sessionStorage => {
-                            text => &sessionStorage,
+                            text => &txt_sessionStorage,
                             item => {
                                 globalStorageOptions =>
-                                  { text => &globalStorageOptions, }
+                                  { text => &txt_globalStorageOptions, }
                             },
                         },
                         authParams => {
-                            text => &authParams,
+                            text => &txt_authParams,
                             item => {},
                         },
                     },
                 },
-                groups       => { text => &userGroups, },
+                groups       => { text => &txt_userGroups, },
                 virtualHosts => {
-                    text => &virtualHosts,
+                    text => &txt_virtualHosts,
                     open => 1,
                 },
             },
@@ -170,37 +170,37 @@ sub printXmlConf {
       $tree->{item}->{item}->{generalParameters}->{item}->{authParams}->{item};
     $authParams->{authentication} =
       $self->xmlField( "value", $config->{authentication} || 'ldap',
-        &authenticationType, );
+        &txt_authenticationType, );
     $authParams->{portal} =
       $self->xmlField( "value", $config->{portal} || 'http://portal/',
         "Portail" );
     $authParams->{securedCookie} =
-      $self->xmlField( "value", $config->{securedCookie} || 0, &securedCookie,
+      $self->xmlField( "value", $config->{securedCookie} || 0, &txt_securedCookie,
       );
 
     $generalParameters->{domain} =
-      $self->xmlField( "value", $config->{domain} || 'example.com', &domain, );
+      $self->xmlField( "value", $config->{domain} || 'example.com', &txt_domain, );
     $generalParameters->{cookieName} =
       $self->xmlField( "value", $config->{cookieName} || 'lemonldap',
-        &cookieName, );
+        &txt_cookieName, );
 
     $sessionStorage->{globalStorage} =
       $self->xmlField( "value",
         $config->{globalStorage} || 'Apache::Session::File',
-        &apacheSessionModule, );
+        &txt_apacheSessionModule, );
 
     $ldapParameters->{ldapServer} =
       $self->xmlField( "value", $config->{ldapServer} || 'localhost',
-        &ldapServer, );
+        &txt_ldapServer, );
     $ldapParameters->{ldapPort} =
-      $self->xmlField( "value", $config->{ldapPort} || 389, &ldapPort, );
+      $self->xmlField( "value", $config->{ldapPort} || 389, &txt_ldapPort, );
     $ldapParameters->{ldapBase} =
-      $self->xmlField( "value", $config->{ldapBase} || ' ', &ldapBase, );
+      $self->xmlField( "value", $config->{ldapBase} || ' ', &txt_ldapBase, );
     $ldapParameters->{managerDn} =
-      $self->xmlField( "value", $config->{managerDn} || ' ', &managerDn, );
+      $self->xmlField( "value", $config->{managerDn} || ' ', &txt_managerDn, );
     $ldapParameters->{managerPassword} =
       $self->xmlField( "value", $config->{managerPassword} || ' ',
-        &managerPassword, );
+        &txt_managerPassword, );
 
     if ( $config->{exportedVars} ) {
         while ( my ( $n, $att ) = each( %{ $config->{exportedVars} } ) ) {
@@ -234,8 +234,8 @@ sub printXmlConf {
             my ( $ih, $ir ) =
               ( "exportedHeaders_$indice", "locationRules_$indice" );
             $virtualHost->{$host}->{item} = {
-                "$ih" => { text => &httpHeaders, },
-                "$ir" => { text => &locationRules, },
+                "$ih" => { text => &txt_httpHeaders, },
+                "$ir" => { text => &txt_locationRules, },
             };
             while ( my ( $reg, $expr ) = each(%$rules) ) {
                 my $type = ( $reg eq 'default' ) ? 'value' : 'both';
@@ -259,11 +259,11 @@ sub printXmlConf {
         }
     }
     if ( $config->{macros} ) {
-	$tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item} = {};
-	my $macros = $tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item};
-	while ( my ( $macro, $expr ) = each( %{ $config->{macros} } ) ) {
-	    $macros->{$macro} = $self->xmlField( 'both', $expr, $macro );
-	}
+        $tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item} = {};
+        my $macros = $tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item};
+        while ( my ( $macro, $expr ) = each( %{ $config->{macros} } ) ) {
+            $macros->{$macro} = $self->xmlField( 'both', $expr, $macro );
+        }
     }
 
     print XMLout(
@@ -339,7 +339,7 @@ sub upload {
     }
     while ( my ( $v, $h ) = each( %{ $tree->{generalParameters}->{macros} })) {
         next unless ( ref($h) );
-	$config->{macros}->{ $h->{text} } = $h->{value};
+        $config->{macros}->{ $h->{text} } = $h->{value};
     }
     foreach (qw(ldapBase ldapPort ldapServer managerDn managerPassword)) {
         $config->{$_} =

@@ -6,7 +6,7 @@ our $VERSION = '0.11';
 
 sub import {
     my ($caller_package) = caller;
-    my $lang = shift;
+    my $lang = pop;
     $lang = lc($lang);
     $lang =~ s/-/_/g;
     foreach ( split( /[,;]/, $lang ) ) {
@@ -18,7 +18,7 @@ sub import {
     }
     $functions ||= &en;
     while ( my ( $f, $v ) = each(%$functions) ) {
-        *{"${caller_package}::$f"} = sub { $v };
+        *{"${caller_package}::txt_$f"} = sub { $v };
     }
 }
 
@@ -26,10 +26,12 @@ sub import {
 *en_us = *en;
 
 1;
+
 __END__
 
 =pod
 =cut
+
 sub fr {
     return {
         configuration        => 'Configuration',
@@ -40,7 +42,7 @@ sub fr {
         globalStorageOptions => 'Param&egrave;tres du module Apache::Session',
         authParams           => "Param&egrave;tres d'authentification",
         userGroups           => "Groupes d'utilisateurs",
-	macros               => "Macros",
+        macros               => "Macros",
         virtualHosts         => "H&ocirc;tes virtuels",
         authenticationType   => "Type d'authentification",
         securedCookie        => 'Cookie s&eacute;curis&eacute; (SSL)',
@@ -54,6 +56,19 @@ sub fr {
         managerPassword      => 'Mot de passe LDAP',
         httpHeaders          => 'En-t&ecirc;tes HTTP',
         locationRules        => 'R&egrave;gles',
+
+        newVirtualHost => 'Nouvel h&ocirc;te virtuel',
+        newMacro       => 'Nouvelle macro',
+        newGroup       => 'Nouveau groupe',
+        newVar         => 'Nouvelle variable',
+        newRule        => 'Nouvelle r&egrave;gle',
+        newHeader      => 'Nouvel en-t&ecirc;te',
+        newGSOpt       => 'Nouvelle option',
+        saveConf       => 'Sauvegarder',
+        deleteNode     => 'Supprimer',
+        unableToSave   => 'Votre navigateur ne supporte pas les objets XMLHTTPRequest: sauvegarde impossible.',
+        confSaved      => 'Configuration sauvegardée sous le num&eacute;ro',
+        saveFailure    => '&Eacute;chec de la sauvegarde',
     };
 }
 
@@ -80,5 +95,19 @@ sub en {
         managerPassword      => 'LDAP Password',
         httpHeaders          => 'HTTP Headers',
         locationRules        => 'Rules',
+
+        newVirtualHost => 'New Virtual Host',
+        newMacro       => 'New Macro',
+        newGroup       => 'New Group',
+        newVar         => 'New Variable',
+        newRule        => 'New Rule',
+        newHeader      => 'New Header',
+        newGSOpt       => 'New Option',
+        saveConf       => 'Save',
+        deleteNode     => 'Delete',
+        rules          => 'Rules',
+        unableToSave   => 'Your browser does not support XMLHTTPRequest objects: fail to save.',
+        confSaved      => 'Configuration saved with number',
+        saveFailure    => 'Save failure',
     };
 }
