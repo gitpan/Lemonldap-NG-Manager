@@ -3,7 +3,7 @@ package Lemonldap::NG::Manager::Conf::SOAP;
 use strict;
 use SOAP::Lite;
 
-our $VERSION = 0.1;
+our $VERSION = 0.11;
 
 sub prereq {
     my $self = shift;
@@ -39,6 +39,22 @@ sub available {
 sub lastCfg {
     my $self = shift;
     return $self->_soapCall( 'lastCfg', @_ );
+}
+
+sub lock {
+    my $self = shift;
+    return $self->_soapCall( 'lock', @_ );
+}
+
+# unlock is not needed here since real unlock is called by store
+#sub unlock {
+#    my $self = shift;
+#    return $self->_soapCall( 'unlock', @_ );
+#}
+
+sub isLocked {
+    my $self = shift;
+    return $self->_soapCall( 'isLocked', @_ );
 }
 
 sub store {
