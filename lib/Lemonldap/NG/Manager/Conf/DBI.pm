@@ -49,8 +49,6 @@ sub dbh {
     );
 }
 
-# TODO: test lock
-
 sub lock {
     my $self = shift;
     my $sth = $self->dbh->prepare_cached(q{SELECT GET_LOCK(?, 5)}, {}, 1);
@@ -97,7 +95,7 @@ sub store {
 
 sub load {
     my ( $self, $cfgNum, $fields ) = @_;
-    $fields = join( /,/, @$fields ) || '*';
+    $fields = $fields ? join( /,/, @$fields ) : '*';
     my $row =
       $self->dbh->selectrow_hashref(
         "SELECT $fields from " . $self->{dbiTable} . " WHERE cfgNum=$cfgNum" );
