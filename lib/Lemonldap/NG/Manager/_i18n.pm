@@ -57,7 +57,7 @@ sub fr {
         httpHeaders             => 'En-t&ecirc;tes HTTP',
         locationRules           => 'R&egrave;gles',
 
-        # Warning: here, &eacute; wil not be understood by Firefox (msgBox)
+        # Attention: ici, &eacute; ne sera pas interprété par Firefox (msgBox)
         newVirtualHost          => 'Nouvel hote virtuel',
         newMacro                => 'Nouvelle macro',
         newGroup                => 'Nouveau groupe',
@@ -80,10 +80,15 @@ sub fr {
         invalidLine             => 'Ligne invalide',
         error                   => 'Erreur',
         result                  => 'R&eacute;sultat',
-        changesAppliedLater     => "Les changements seront effectifs d'ici 10 minutes",
+        changesAppliedLater     => "Les changements seront effectifs d'ici 10 minutes. Utilisez \"apachectl reload\" sur les serveurs concern&eacute;s pour forcer la prise en compte imm&eacute;diate",
         prevConf                => 'Pr&eacute;c&eacute;dente',
         nextConf                => 'Suivante',
         lastConf                => 'Derni&egrave;re',
+        deleteVirtualHost       => "Supprimer l'h&ocirc;te virtuel",
+
+        # Attention: ici, &Ecirc; ne sera pas interprété par Firefox (msgBox)
+        areYouSure              => 'Etes vous sur ?',
+        syntaxError             => 'Erreur de syntaxe, configuration refus&eacute;e. Consultez les journaux du serveur web.',
     };
 }
 
@@ -135,9 +140,12 @@ sub en {
         invalidLine             => 'Invalid Line',
         error                   => 'Error',
         result                  => 'Result',
-        changesAppliedLater     => 'Changes will be effective within 10 minutes',
+        changesAppliedLater     => 'Changes will be effective within 10 minutes. Use "apachectl reload" on concerned servers for immediate reloading',
         prevConf                => 'Previous',
         nextConf                => 'Next',
         lastConf                => 'Last',
+        deleteVirtualHost       => 'Delete virtual host',
+        areYouSure              => 'Are you sure ?',
+        syntaxError             => 'Syntax error, configuration refused. See web server logs for more.',
     };
 }

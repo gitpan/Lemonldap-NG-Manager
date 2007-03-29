@@ -9,11 +9,14 @@ use Lemonldap::NG::Manager::Conf;
 use Lemonldap::NG::Manager::_HTML;
 require Lemonldap::NG::Manager::_i18n;
 require Lemonldap::NG::Manager::Help;
+use Lemonldap::NG::Manager::Conf::Constants;
 use LWP::UserAgent;
+use Safe;
+use MIME::Base64;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.511';
+our $VERSION = '0.61';
 
 sub new {
     my ( $class, $args ) = @_;
@@ -242,6 +245,7 @@ sub buildTree {
     if ( $config->{locationRules} ) {
         $tree->{item}->{item}->{virtualHosts}->{item} = {};
         my $virtualHost = $tree->{item}->{item}->{virtualHosts}->{item};
+        # TODO: split locationRules into 2 arrays
         while ( my ( $host, $rules ) = each( %{ $config->{locationRules} } ) ) {
             $virtualHost->{$host} = $self->xmlField( "text", 'i', $host );
             my ( $ih, $ir ) =
@@ -311,6 +315,13 @@ sub print_upload {
 }
 
 sub upload {
+    my $self = shift;
+    my $config = $self->tree2conf(@_);
+    return SYNTAX_ERROR unless( $self->checkConf($config) );
+    return $self->config->saveConf($config);
+}
+
+sub tree2conf {
     my ( $self, $tree ) = @_;
     $tree = XMLin($$tree);
     my $config = {};
@@ -330,6 +341,7 @@ sub upload {
             $lr = $h->{$_} if ( $_ =~ /locationRules/ );
             $eh = $h->{$_} if ( $_ =~ /exportedHeaders/ );
         }
+        # TODO: split locationRules into 2 arrays
       LR: foreach my $r ( values(%$lr) ) {
             next LR unless ( ref($r) );
             $config->{locationRules}->{$vh}->{ $r->{text} } = $r->{value};
@@ -368,7 +380,107 @@ sub upload {
         next unless ( ref($h) );
         $config->{exportedVars}->{$h->{text}} = $h->{value};
     }
-    return $self->config->saveConf($config);
+    return $config;
+}
+
+sub checkConf {
+    my $self = shift;
+    my $config = shift;
+    my $expr = '';
+    # Check cookie name
+    return 0 unless( $config->{cookieName} =~ /^\w+$/ );
+    # Check domain name
+    return 0 unless( $config->{domain} =~ /^[\w\.]+$/ );
+    # Load variables
+    foreach(keys %{ $config->{exportedVars} }) {
+        # Reserved words
+        if( $_ eq 'groups' ) {
+            print STDERR "$_ is not authorized in attribute names. Change it!\n";
+            return 0;
+        }
+        if( $_ !~ /^\w+$/ ) {
+            print STDERR "$_ is not a valid attribute name\n";
+            return 0;
+        }
+        $expr .= "my \$$_ = '1';";
+    }
+    # Load and check macros
+    my $safe = new Safe;
+    $safe->share( '&encode_base64' );
+    while( my($k, $v) = each( %{ $config->{macros} } ) ) {
+        # Reserved words
+        if( $k eq 'groups' ) {
+            print STDERR "$k is not authorized in macro names. Change it!\n";
+            return 0;
+        }
+        if( $k !~ /^\w+$/ ) {
+            print STDERR "$k is not a valid macro name\n";
+            return 0;
+        }
+        $expr .= "my \$$k = $v;";
+    }
+    # Test macro values;
+    $safe->reval( $expr );
+    if( $@ ) {
+        print STDERR "Error in macro syntax: $@\n";
+        return 0;
+    }
+    # Test groups
+    $expr .= 'my $groups;';
+    while( my($k,$v) = each( %{ $config->{groups} } ) ) {
+        if( $k !~ /^[\w-]+$/ ) {
+            print STDERR "$k is not a valid group name\n";
+            return 0;
+        }
+        $safe->reval( $expr . "\$groups = '$k' if($v);");
+        if( $@ ) {
+            print STDERR "Syntax error in group $k: $@\n";
+            return 0;
+        }
+    }
+    # Test rules
+    while( my($vh, $rules) = each( %{ $config->{locationRules} } ) ) {
+        unless( $vh =~ /^[-\w\.]+$/ ) {
+            print STDERR "$vh is not a valid virtual host name\n";
+            return 0;
+        }
+        while( my($reg, $v) = each( %{ $rules } ) ) {
+            unless( $reg eq 'default' ) {
+                $reg =~ s/#/\\#/g;
+                $safe->reval( $expr . "my \$r = qr#$reg#;" );
+                if( $@ ) {
+                    print STDERR "Syntax error in regexp ($vh -> $reg)\n";
+                    return 0;
+                }
+            }
+            unless( $v eq 'deny' or $v eq 'accept' ) {
+                $safe->reval( $expr . "my \$r=1 if($v);");
+                if( $@ ) {
+                    print STDERR "Syntax error in expression ($vh -> $reg)\n";
+                    return 0;
+                }
+            }
+        }
+    }
+    # Test exported headers
+    while( my($vh, $headers) = each( %{ $config->{exportedHeaders} } ) ) {
+        unless( $vh =~ /^[-\w\.]+$/ ) {
+            print STDERR "$vh is not a valid virtual host name\n";
+            return 0;
+        }
+        while( my($header, $v) = each( %{ $headers } ) ) {
+            unless( $header =~ /^[\w][-\w]*$/ ) {
+                print STDERR "$header is not a valid HTTP header name ($vh)\n";
+                return 0;
+            }
+            $safe->reval( $expr . "my \$r = $v;" );
+            if( $@ ) {
+                print STDERR "Syntax error in header expression ($vh -> $header)\n";
+                return 0;
+            }
+        }
+    }
+    1;
 }
 
 # Apply subroutines
@@ -567,7 +679,8 @@ configuration tree (called with AJAX).
 
 =head1 SEE ALSO
 
-L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>, L<CGI>
+L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>, L<CGI>,
+http://wiki.lemonldap.objectweb.org/xwiki/bin/view/NG/Presentation
 
 =head1 AUTHOR
 
@@ -575,7 +688,7 @@ Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006 by Xavier Guimard
+Copyright (C) 2006-2007 by Xavier Guimard
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,

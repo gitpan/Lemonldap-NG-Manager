@@ -5,7 +5,7 @@ use Storable qw(thaw freeze);
 use MIME::Base64;
 use Lemonldap::NG::Manager::Conf::Constants;
 
-our $VERSION = 0.43;
+our $VERSION = 0.44;
 our @ISA;
 
 sub new {
@@ -28,7 +28,7 @@ sub new {
           unless $self->{type} =~ /^Lemonldap/;
         eval "require $self->{type}";
         die($@) if ($@);
-        push @ISA, $self->{type};
+        unshift @ISA, $self->{type};
         return 0 unless $self->prereq;
         $self->{mdone}++;
     }
@@ -149,6 +149,9 @@ more.
 
 =back
 
+WARNING: You have to use the same storage type on all Lemonldap::NG parts in
+the same server.
+
 =item * B<getConf>: returns a hash reference to the configuration. it takes
 a hash reference as first argument containing 2 optional parameters:
 
@@ -169,7 +172,8 @@ getConf returns all (C<select * from lmConfig>).
 
 =head1 SEE ALSO
 
-L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>
+L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>,
+http://wiki.lemonldap.objectweb.org/xwiki/bin/view/NG/Presentation
 
 =head1 AUTHOR
 
@@ -177,7 +181,7 @@ Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006 by Xavier Guimard
+Copyright (C) 2006-2007 by Xavier Guimard
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,

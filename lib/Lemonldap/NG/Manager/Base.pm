@@ -26,7 +26,8 @@ sub header_public {
     my $year = $5;
     my $cm   = $2;
 
-    if ( my $ref = $ENV{HTTP_IF_MODIFIED_SINCE} ) {
+    # TODO: Remove TODO_ for stable releases
+    if ( my $ref = $ENV{TODO_HTTP_IF_MODIFIED_SINCE} ) {
         my %month = (
             jan => 0,
             feb => 1,
@@ -92,7 +93,8 @@ a filename: the last modify date of this file is used for reference.
 
 =head1 SEE ALSO
 
-L<Lemonldap::NG::Manager>, L<CGI>
+L<Lemonldap::NG::Manager>, L<CGI>,
+http://wiki.lemonldap.objectweb.org/xwiki/bin/view/NG/Presentation
 
 =head1 AUTHOR
 
@@ -100,7 +102,7 @@ Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2005 by Xavier Guimard E<lt>x.guimard@free.frE<gt>
+Copyright (C) 2006-2007 by Xavier Guimard E<lt>x.guimard@free.frE<gt>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.4 or,

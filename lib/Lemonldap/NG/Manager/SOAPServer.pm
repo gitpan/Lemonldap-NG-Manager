@@ -102,9 +102,9 @@ our $config;
 our $authorizedFunc = 'get';
 
 sub newsession {
-	return 0 unless( $authorizedFunc =~ /\bnew\b/ );
-	my( $class, $args ) = @_;
-	$args ||= {};
+    return 0 unless( $authorizedFunc =~ /\bnew\b/ );
+    my( $class, $args ) = @_;
+    $args ||= {};
     my %h;
     eval {
         tie %h, $config->{realSessionStorage}, undef, $config->{realSessionStorageOptions};
@@ -119,10 +119,10 @@ sub newsession {
 }
 
 sub get {
-	print STDERR "get\n";
-	return 0 unless( $authorizedFunc =~ /\bget\b/ );
-	my( $class, $id ) = @_;
-	my %h;
+    print STDERR "get\n";
+    return 0 unless( $authorizedFunc =~ /\bget\b/ );
+    my( $class, $id ) = @_;
+    my %h;
     eval {
         tie %h, $config->{realSessionStorage}, $id, $config->{realSessionStorageOptions};
     };
@@ -135,9 +135,9 @@ sub get {
 }
 
 sub set {
-	return 0 unless( $authorizedFunc =~ /\bset\b/ );
+    return 0 unless( $authorizedFunc =~ /\bset\b/ );
     my( $class, $id, $args ) = @_;
-	my %h;
+    my %h;
     eval {
         tie %h, $config->{realSessionsStorage}, undef, $config->{realSessionsStorageOptions};
     };
@@ -270,7 +270,8 @@ side.
 =head1 SEE ALSO
 
 L<Lemonldap::NG::Manager>, L<Lemonldap::NG::Manager::Conf::SOAP>,
-L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>
+L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>,
+http://wiki.lemonldap.objectweb.org/xwiki/bin/view/NG/Presentation
 
 =head1 AUTHOR
 
