@@ -16,7 +16,7 @@ use MIME::Base64;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.61';
+our $VERSION = '0.63';
 
 sub new {
     my ( $class, $args ) = @_;
@@ -229,7 +229,7 @@ sub buildTree {
         }
     }
 
-    if ( $config->{globalStorageOptions} ) {
+    if ( $config->{globalStorageOptions} and %{ $config->{globalStorageOptions} } ) {
         $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item}->{globalStorageOptions}->{item} = {};
         $globalStorageOptions =
           $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item}->{globalStorageOptions}->{item};
@@ -242,7 +242,7 @@ sub buildTree {
     }
 
     my $indice = 1;
-    if ( $config->{locationRules} ) {
+    if ( $config->{locationRules} and %{ $config->{locationRules} } ) {
         $tree->{item}->{item}->{virtualHosts}->{item} = {};
         my $virtualHost = $tree->{item}->{item}->{virtualHosts}->{item};
         # TODO: split locationRules into 2 arrays
@@ -268,14 +268,14 @@ sub buildTree {
             }
         }
     }
-    if ( $config->{groups} ) {
+    if ( $config->{groups} and %{ $config->{groups} } ) {
         $tree->{item}->{item}->{groups}->{item} = {};
         my $groups = $tree->{item}->{item}->{groups}->{item};
         while ( my ( $group, $expr ) = each( %{ $config->{groups} } ) ) {
             $groups->{$group} = $self->xmlField( 'both', $expr, $group );
         }
     }
-    if ( $config->{macros} ) {
+    if ( $config->{macros} and %{ $config->{macros} } ) {
         $tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item} = {};
         my $macros = $tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item};
         while ( my ( $macro, $expr ) = each( %{ $config->{macros} } ) ) {
@@ -315,7 +315,7 @@ sub print_upload {
 }
 
 sub upload {
-    my $self = shift;
+    my $self = shift;	
     my $config = $self->tree2conf(@_);
     return SYNTAX_ERROR unless( $self->checkConf($config) );
     return $self->config->saveConf($config);
@@ -685,6 +685,16 @@ http://wiki.lemonldap.objectweb.org/xwiki/bin/view/NG/Presentation
 =head1 AUTHOR
 
 Xavier Guimard, E<lt>x.guimard@free.frE<gt>
+
+=head1 BUG REPORT
+
+Use OW2 system to report bug or ask for features:
+L<http://forge.objectweb.org/tracker/?group_id=274>
+
+=head1 DOWNLOAD
+
+Lemonldap::NG is available at
+L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 
 =head1 COPYRIGHT AND LICENSE
 
