@@ -3,7 +3,7 @@ package Lemonldap::NG::Manager::Conf::File;
 use strict;
 use Lemonldap::NG::Manager::Conf::Constants;
 
-our $VERSION = 0.21;
+our $VERSION = 0.22;
 
 sub prereq {
     my $self = shift;
@@ -60,6 +60,8 @@ sub unlock {
 
 sub store {
     my ( $self, $fields ) = @_;
+    my $mask = umask;
+    umask ( oct ( '0027' ) );
     unless( open FILE, '>' . $self->{dirName} . "/lmConf-" . $fields->{cfgNum} ) {
         print STDERR "Open file failed: $!";
         $self->unlock;
@@ -69,6 +71,7 @@ sub store {
         print FILE "$k\n\t$v\n\n";
     }
     close FILE;
+    umask( $mask );
     $self->unlock;
     return $fields->{cfgNum};
 }
@@ -91,6 +94,11 @@ sub load {
     }
     close FILE;
     return $f;
+}
+
+sub delete {
+    my ( $self, $cfgNum ) = @_;
+    unlink ( $self->{dirName} . "/lmConf-$cfgNum" );
 }
 
 __END__

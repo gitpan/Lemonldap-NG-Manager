@@ -1,6 +1,7 @@
 package Lemonldap::NG::Manager::Conf;
 
 use strict;
+no strict 'refs';
 use Storable qw(thaw freeze);
 use MIME::Base64;
 use Lemonldap::NG::Manager::Conf::Constants;
@@ -28,7 +29,6 @@ sub new {
           unless $self->{type} =~ /^Lemonldap/;
         eval "require $self->{type}";
         die($@) if ($@);
-        unshift @ISA, $self->{type};
         return 0 unless $self->prereq;
         $self->{mdone}++;
     }
@@ -65,6 +65,10 @@ sub getConf {
     my ( $self, $args ) = @_;
     $args->{cfgNum} ||= $self->lastCfg;
     return undef unless $args->{cfgNum};
+    if ( $args->{cfgNum}<0 ) {
+        my @a = $self->available();
+        $args->{cfgNum} = ( @a + $args->{cfgNum} >0 ) ? ( $a[ $#a + $args->{cfgNum} ] ) : $a[0];
+    }
     my $fields = $self->load( $args->{cfgNum}, $args->{fields} );
     my $conf;
     while ( my ( $k, $v ) = each(%$fields) ) {
@@ -77,6 +81,45 @@ sub getConf {
         }
     }
     return $conf;
+}
+
+sub prereq {
+    return &{$_[0]->{type}.'::prereq'}(@_);
+}
+
+sub available {
+    return &{$_[0]->{type}.'::available'}(@_);
+}
+
+sub lastCfg {
+    return &{$_[0]->{type}.'::lastCfg'}(@_);
+}
+
+sub lock {
+    return &{$_[0]->{type}.'::lock'}(@_);
+}
+
+sub isLocked {
+    return &{$_[0]->{type}.'::isLocked'}(@_);
+}
+
+sub unlock {
+    return &{$_[0]->{type}.'::unlock'}(@_);
+}
+
+sub store {
+    return &{$_[0]->{type}.'::store'}(@_);
+}
+
+sub load {
+    return &{$_[0]->{type}.'::load'}(@_);
+}
+
+sub delete {
+    my($self, $c) = @_;
+    my @a = $self->available();
+    return 0 unless ( @a + $c >0 );
+    return &{$self->{type}.'::delete'}( $self, $a[ $#a + $c ] );
 }
 
 1;
@@ -163,7 +206,7 @@ getConf returns all (C<select * from lmConfig>).
 
 =back
 
-=item B<saveConf>: stores the Lemonldap::NG configuration passed in argument
+=item * B<saveConf>: stores the Lemonldap::NG configuration passed in argument
 (hash reference). it returns the number of the new configuration.
 
 =back

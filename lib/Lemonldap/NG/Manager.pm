@@ -16,7 +16,7 @@ use MIME::Base64;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.63';
+our $VERSION = '0.64';
 
 sub new {
     my ( $class, $args ) = @_;
@@ -100,11 +100,27 @@ sub print_help {
     eval { no strict "refs"; &{"help_$chap"} };
 }
 
+# Delete subroutine
+
+sub print_delete {
+    my $self = shift;
+    print $self->header;
+    Lemonldap::NG::Manager::Help::import( $ENV{HTTP_ACCEPT_LANGUAGE} )
+      unless ( $self->can('help_groups') );
+    if ( $self->config->delete ( $self->param ( 'cfgNum' ) ) ) {
+        print &txt_configurationDeleted;
+    }
+    else {
+        print &txt_configurationNotDeleted;
+    }
+    exit;
+}
+
 # Configuration download subroutines
 sub print_conf {
     my $self = shift;
     print $self->header( -type => "text/xml", '-Cache-Control' => 'private' );
-    $self->printXmlConf;
+    $self->printXmlConf( { cfgNum => $self->param ( 'cfgNum' ), } );
     exit;
 }
 
@@ -118,7 +134,7 @@ sub default {
 sub printXmlConf {
     my $self   = shift;
     print XMLout(
-        $self->buildTree,
+        $self->buildTree( @_ ),
         #XMLDecl  => "<?xml version='1.0' encoding='iso-8859-1'?>",
         RootName => 'tree',
         KeyAttr  => { item => 'id', username => 'name' },
@@ -128,7 +144,7 @@ sub printXmlConf {
 
 sub buildTree {
     my $self   = shift;
-    my $config = $self->config->getConf();
+    my $config = $self->config->getConf( @_ );
     $config = $self->default unless ($config);
     my $tree = {
         id   => '0',
@@ -191,8 +207,9 @@ sub buildTree {
       $self->xmlField( "value", $config->{portal} || 'http://portal/',
         "Portail" );
     $authParams->{securedCookie} =
-      $self->xmlField( "value", $config->{securedCookie} || 0, &txt_securedCookie,
-      );
+      $self->xmlField( "value", $config->{securedCookie} || 0, &txt_securedCookie );
+    $generalParameters->{whatToTrace} =
+      $self->xmlField( "value", $config->{whatToTrace} || '$uid', &txt_whatToTrace );
 
     $generalParameters->{domain} =
       $self->xmlField( "value", $config->{domain} || 'example.com', &txt_domain, );
@@ -353,6 +370,7 @@ sub tree2conf {
     }
     # General parameters
     $config->{cookieName} = $tree->{generalParameters}->{cookieName}->{value};
+    $config->{whatToTrace} = $tree->{generalParameters}->{whatToTrace}->{value};
     $config->{domain}     = $tree->{generalParameters}->{domain}->{value};
     $config->{globalStorage} = $tree->{generalParameters}->{sessionStorage}->{globalStorage}->{value};
     while ( my ( $v, $h ) = each( %{ $tree->{generalParameters}->{sessionStorage}->{globalStorageOptions} })) {
