@@ -16,7 +16,7 @@ use MIME::Base64;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.65';
+our $VERSION = '0.7';
 
 sub new {
     my ( $class, $args ) = @_;
@@ -332,7 +332,7 @@ sub print_upload {
 }
 
 sub upload {
-    my $self = shift;	
+    my $self = shift;
     my $config = $self->tree2conf(@_);
     return SYNTAX_ERROR unless( $self->checkConf($config) );
     return $self->config->saveConf($config);
@@ -408,7 +408,7 @@ sub checkConf {
     # Check cookie name
     return 0 unless( $config->{cookieName} =~ /^\w+$/ );
     # Check domain name
-    return 0 unless( $config->{domain} =~ /^[\w\.]+$/ );
+    return 0 unless( $config->{domain} =~ /^\w[\w\.\-]*\w$/ );
     # Load variables
     foreach(keys %{ $config->{exportedVars} }) {
         # Reserved words

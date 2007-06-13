@@ -8,7 +8,7 @@ use AutoLoader qw(AUTOLOAD);
 require Lemonldap::NG::Manager::_i18n;
 use Lemonldap::NG::Manager::Conf::Constants;
 
-our $VERSION = '0.27';
+our $VERSION = '0.28';
 
 # TODO: Delete buttons in headers and rules if 'read-only'
 
@@ -81,7 +81,8 @@ sub javascript {
                newRule newHeader httpHeaders waitingResult unknownError
                configurationWasChanged configLoaded warningConfNotApplied
                applyConf prevConf lastConf nextConf deleteVirtualHost
-               areYouSure syntaxError deleteConf confirmDeleteConf)) {
+               areYouSure syntaxError deleteConf confirmDeleteConf
+               invalidVirtualHostName)) {
         $text{$_} = &{"txt_$_"};
         $text{$_} =~s/'/\\'/g;
     }
@@ -127,7 +128,7 @@ function onNodeSelect(nodeId) {
     switch(tree.getUserData(nodeId,"modif")) {
       case 'text':
         k='valeur';
-        v='<input value="'+nodeId+'" onChange="tree.setItemText('+"'"+nodeId+"'"+',this.value.replace(/^([^a-z])/i,\\'z\$1\\'));tree.changeItemId('+"'"+nodeId+"'"+',this.value);">';
+        v='<input value="'+nodeId+'" onChange="var tmp=this.value.replace(/^([^a-z])/i,\\'z\$1\\');tmp=tmp.replace(/^([a-zA-Z0-9_\\.\\-]*).*\$/,\\'\$1\\');tree.setItemText('+"'"+nodeId+"'"+',tmp);tree.changeItemId('+"'"+nodeId+"'"+',tmp);this.value=tmp">';
         break;
       case 'both':
         k='<input value="'+tree.getItemText(nodeId)+'" onChange="tree.setItemText('+"'"+nodeId+"'"+',this.value.replace(/^([^a-z])/i,\\'z\$1\\'))">';
@@ -240,6 +241,10 @@ function insertNewChild(a,b,c) {
 function newVirtualHost() {
   var rep=prompt("$text{newVirtualHost}");
   if(rep) {
+    if(!rep.match(/^\\w[\\w\\.\\-]*\\w\$/)){
+      alert('$text{invalidVirtualHostName}');
+      return 0;
+    }
     insertNewChild('virtualHosts',rep,rep)
     tree.setUserData(rep,'modif','text');
     insertNewChild(rep,rep+'_exportedHeaders','$text{httpHeaders}');
@@ -440,12 +445,12 @@ qq#<script type="text/javascript" src="$ENV{SCRIPT_NAME}?lmQuery=lmjs"></script>
             <div style="z-index: 2;" id="haut" class="clsPane">
              <div id="buttons"></div>
              <div id="formulaire" style="display:none;">
-              <form onSubmit="return false">
+              <form onsubmit="return false" action="$ENV{SCRIPT_NAME}">
                <p></p>
-               <table border=1 width="100%" style="empty-cells:show;">
+               <table border="1" width="100%" style="empty-cells:show;">
                 <tr>
-                 <th width=200>Champ</th>
-                 <th width=400>Valeur</th>
+                 <th width="200">Champ</th>
+                 <th width="400">Valeur</th>
                 </tr>
                 <tr>
                  <td>
