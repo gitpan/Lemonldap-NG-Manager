@@ -7,6 +7,7 @@ use XML::Simple;
 use Lemonldap::NG::Manager::Base;
 use Lemonldap::NG::Manager::Conf;
 use Lemonldap::NG::Manager::_HTML;
+require Lemonldap::NG::Manager::_Response;
 require Lemonldap::NG::Manager::_i18n;
 require Lemonldap::NG::Manager::Help;
 use Lemonldap::NG::Manager::Conf::Constants;
@@ -16,7 +17,7 @@ use MIME::Base64;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.72';
+our $VERSION = '0.8';
 
 sub new {
     my ( $class, $args ) = @_;
@@ -75,7 +76,8 @@ sub print_css {
 
 sub print_libjs {
     my $self = shift;
-    print $self->header_public( $self->{jsFile}, -type => 'application/x-javascript' );
+    print $self->header_public( $self->{jsFile},
+        -type => 'application/x-javascript' );
     open F, $self->{jsFile};
     while (<F>) {
         print;
@@ -85,7 +87,8 @@ sub print_libjs {
 
 sub print_lmjs {
     my $self = shift;
-    print $self->header_public( $ENV{SCRIPT_FILENAME}, -type => 'text/javascript' );
+    print $self->header_public( $ENV{SCRIPT_FILENAME},
+        -type => 'text/javascript' );
     $self->javascript;
 }
 
@@ -107,7 +110,7 @@ sub print_delete {
     print $self->header;
     Lemonldap::NG::Manager::Help::import( $ENV{HTTP_ACCEPT_LANGUAGE} )
       unless ( $self->can('help_groups') );
-    if ( $self->config->delete ( $self->param ( 'cfgNum' ) ) ) {
+    if ( $self->config->delete( $self->param('cfgNum') ) ) {
         print &txt_configurationDeleted;
     }
     else {
@@ -120,7 +123,7 @@ sub print_delete {
 sub print_conf {
     my $self = shift;
     print $self->header( -type => "text/xml", '-Cache-Control' => 'private' );
-    $self->printXmlConf( { cfgNum => $self->param ( 'cfgNum' ), } );
+    $self->printXmlConf( { cfgNum => $self->param('cfgNum'), } );
     exit;
 }
 
@@ -132,9 +135,9 @@ sub default {
 }
 
 sub printXmlConf {
-    my $self   = shift;
+    my $self = shift;
     print XMLout(
-        $self->buildTree( @_ ),
+        $self->buildTree(@_),
         #XMLDecl  => "<?xml version='1.0' encoding='iso-8859-1'?>",
         RootName => 'tree',
         KeyAttr  => { item => 'id', username => 'name' },
@@ -144,7 +147,7 @@ sub printXmlConf {
 
 sub buildTree {
     my $self   = shift;
-    my $config = $self->config->getConf( @_ );
+    my $config = $self->config->getConf(@_);
     $config = $self->default unless ($config);
     my $indice = 1;
     my $tree = {
@@ -248,7 +251,9 @@ sub buildTree {
         }
     }
 
-    if ( $config->{globalStorageOptions} and %{ $config->{globalStorageOptions} } ) {
+    if ( $config->{globalStorageOptions}
+        and %{ $config->{globalStorageOptions} } )
+    {
         $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item}->{globalStorageOptions}->{item} = {};
         $globalStorageOptions =
           $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item}->{globalStorageOptions}->{item};
@@ -260,7 +265,6 @@ sub buildTree {
     else {
     }
 
-    my $indice = 1;
     if ( $config->{locationRules} and %{ $config->{locationRules} } ) {
         $tree->{item}->{item}->{virtualHosts}->{item} = {};
         my $virtualHost = $tree->{item}->{item}->{virtualHosts}->{item};
@@ -327,29 +331,40 @@ sub xmlField {
 sub print_upload {
     my $self  = shift;
     my $datas = shift;
-    print $self->header( -type => "text/html" );
-    my $tmp = $self->upload($datas);
-    if ($tmp) {
-        print $tmp;
+    print $self->header( -type => "text/javascript" );
+    my $r = Lemonldap::NG::Manager::_Response->new();
+    my $tmp = $self->upload( $datas, $r );
+    if ( $tmp == 0 ) {
+        $r->message( &txt_unknownError, &txt_checkLogs );
     }
-    else {
-        print 0;
+    elsif ( $tmp > 0 ) {
+        $r->setConfiguration($tmp);
+        $r->message( &txt_confSaved . " $tmp", &txt_warningConfNotApplied );
     }
+    elsif ( $tmp == CONFIG_WAS_CHANGED ) {
+        $r->message( &txt_saveFailure, &txt_configurationWasChanged );
+    }
+    elsif ( $tmp == SYNTAX_ERROR ) {
+        $r->message( &txt_saveFailure, &txt_syntaxError );
+    }
+    $r->send;
 }
 
 sub upload {
-    my $self = shift;
-    my $config = $self->tree2conf(@_);
-    return SYNTAX_ERROR unless( $self->checkConf($config) );
+    my $self     = shift;
+    my $tree     = shift;
+    my $response = shift;
+    my $config   = $self->tree2conf( $tree, $response );
+    return SYNTAX_ERROR unless ( $self->checkConf( $config, $response ) );
     return $self->config->saveConf($config);
 }
 
 sub tree2conf {
-    my ( $self, $tree ) = @_;
+    my ( $self, $tree, $response ) = @_;
     $tree = XMLin($$tree);
     my $config = {};
     # Load config number
-    ($config->{cfgNum}) = ($tree->{text} =~ /(\d+)$/);
+    ( $config->{cfgNum} ) = ( $tree->{text} =~ /(\d+)$/ );
     # Load groups
     while ( my ( $g, $h ) = each( %{ $tree->{groups} } ) ) {
         next unless ( ref($h) );
@@ -376,15 +391,15 @@ sub tree2conf {
         }
     }
     # General parameters
-    $config->{cookieName} = $tree->{generalParameters}->{cookieName}->{value};
+    $config->{cookieName}  = $tree->{generalParameters}->{cookieName}->{value};
     $config->{whatToTrace} = $tree->{generalParameters}->{whatToTrace}->{value};
-    $config->{domain}     = $tree->{generalParameters}->{domain}->{value};
+    $config->{domain}      = $tree->{generalParameters}->{domain}->{value};
     $config->{globalStorage} = $tree->{generalParameters}->{sessionStorage}->{globalStorage}->{value};
     while ( my ( $v, $h ) = each( %{ $tree->{generalParameters}->{sessionStorage}->{globalStorageOptions} })) {
         next unless ( ref($h) );
         $config->{globalStorageOptions}->{ $h->{text} } = $h->{value};
     }
-    while ( my ( $v, $h ) = each( %{ $tree->{generalParameters}->{macros} })) {
+    while ( my ( $v, $h ) = each( %{ $tree->{generalParameters}->{macros} } ) ) {
         next unless ( ref($h) );
         $config->{macros}->{ $h->{text} } = $h->{value};
     }
@@ -403,109 +418,150 @@ sub tree2conf {
         each( %{ $tree->{generalParameters}->{exportedVars} } ) )
     {
         next unless ( ref($h) );
-        $config->{exportedVars}->{$h->{text}} = $h->{value};
+        $config->{exportedVars}->{ $h->{text} } = $h->{value};
     }
     return $config;
 }
 
+# Configuration check : before saving, we try to find faults in configuration
 sub checkConf {
-    my $self = shift;
-    my $config = shift;
-    my $expr = '';
+    my $self     = shift;
+    my $config   = shift;
+    my $response = shift;
+    my $expr     = '';
+    my $result   = 1;
     # Check cookie name
-    return 0 unless( $config->{cookieName} =~ /^\w+$/ );
+    unless ( $config->{cookieName} =~ /^[a-zA-Z]\w*$/ ) {
+        $result = 0;
+        $response->error( '"' . $config->{cookieName} . '" ' . &txt_isNotAValidCookieName );
+    }
     # Check domain name
-    return 0 unless( $config->{domain} =~ /^\w[\w\.\-]*\w$/ );
+    unless ( $config->{domain} =~ /^(?=^.{1,254}$)(?:(?!\d+\.)[\w\-]{1,63}\.?)+(?:[a-zA-Z]{2,})$/ ) {
+        $result = 0;
+        $response->error( '"' . $config->{domain} . '" ' . &txt_isNotAValidCookieName );
+    }
     # Load variables
-    foreach(keys %{ $config->{exportedVars} }) {
+    foreach ( keys %{ $config->{exportedVars} } ) {
         # Reserved words
-        if( $_ eq 'groups' ) {
-            print STDERR "$_ is not authorized in attribute names. Change it!\n";
-            return 0;
+        if ( $_ eq 'groups' or $_ !~ /^\w+$/ ) {
+            $response->error( "\"$_\" " . &txt_isNotAValidAttributeName );
+            $result = 0;
         }
-        if( $_ !~ /^\w+$/ ) {
-            print STDERR "$_ is not a valid attribute name\n";
-            return 0;
+        if ( $config->{exportedVars}->{$_} !~ /^\w+$/ ) {
+            $response->error( "\"$config->{exportedVars}->{$_}\" " . &txt_isNotAValidLDAPAttributeName );
+            $result = 0;
         }
         $expr .= "my \$$_ = '1';";
     }
     # Load and check macros
     my $safe = new Safe;
-    $safe->share( '&encode_base64' );
-    while( my($k, $v) = each( %{ $config->{macros} } ) ) {
-        # Reserved words
-        if( $k eq 'groups' ) {
-            print STDERR "$k is not authorized in macro names. Change it!\n";
-            return 0;
-        }
-        if( $k !~ /^[a-zA-Z]\w*$/ ) {
-            print STDERR "$k is not a valid macro name\n";
-            return 0;
-        }
-        $expr .= "my \$$k = $v;";
+    $safe->share('&encode_base64');
+    $safe->reval($expr);
+    if ($@) {
+        $result = 0;
+        $response->error( &txt_unknownErrorInVars . " ($@)" );
     }
-    # Test macro values;
-    $safe->reval( $expr );
-    if( $@ ) {
-        print STDERR "Error in macro syntax: $@\n";
-        return 0;
+    while ( my ( $k, $v ) = each( %{ $config->{macros} } ) ) {
+        # Syntax
+        if ( $k eq 'groups' or $k !~ /^[a-zA-Z]\w*$/ ) {
+            $response->error( "\"$k\" " . &txt_isNotAValidMacroName );
+            $result = 0;
+        }
+        # "=" may be a fault ("==")
+        if ( $v =~ /(?<=[^=<\?])=(?!=)/ ) {
+            $response->warning( &txt_macro . " $k " . &txt_containsAnAssignment );
+        }
+        # Test macro values;
+        $expr .= "my \$$k = $v;";
+        $safe->reval($expr);
+        if ($@) {
+            $response->error( &txt_macro . " $k : " . &txt_syntaxError . " : $@");
+            $result = 0;
+        }
+    }
+    # TODO: check module name
+    # Check whatToTrace
+    unless ( $config->{whatToTrace} =~ /^\$?[a-zA-Z]\w*$/ ) {
+        $response->error(&txt_invalidWhatToTrace);
+        $result = 0;
     }
     # Test groups
     $expr .= 'my $groups;';
-    while( my($k,$v) = each( %{ $config->{groups} } ) ) {
-        if( $k !~ /^[\w-]+$/ ) {
-            print STDERR "$k is not a valid group name\n";
-            return 0;
+    while ( my ( $k, $v ) = each( %{ $config->{groups} } ) ) {
+        # Name syntax
+        if ( $k !~ /^[\w-]+$/ ) {
+            $response->error( "\"$k\" " . &txt_isNotAValidGroupName );
+            $result = 0;
         }
-        $safe->reval( $expr . "\$groups = '$k' if($v);");
-        if( $@ ) {
-            print STDERR "Syntax error in group $k: $@\n";
-            return 0;
+        # "=" may be a fault (but not "==")
+        if ( $v =~ /(?<=[^=<\?])=(?!=)/ ) {
+            $response->warning( &txt_group . " $k " . &txt_containsAnAssignment );
+        }
+        # Test boolean expression
+        $safe->reval( $expr . "\$groups = '$k' if($v);" );
+        if ($@) {
+            $response->error( &txt_group . " $k " . &txt_syntaxError );
+            $result = 0;
         }
     }
     # Test rules
-    while( my($vh, $rules) = each( %{ $config->{locationRules} } ) ) {
-        unless( $vh =~ /^\w[-\w\.]*$/ ) {
-            print STDERR "$vh is not a valid virtual host name\n";
-            return 0;
+    while ( my ( $vh, $rules ) = each( %{ $config->{locationRules} } ) ) {
+        # Virtual host name has to be a fully qualified name or an IP address (CDA)
+        unless ( $vh =~ /^(?:(?=^.{1,254}$)(?:(?!\d+\.)[\w\-]{1,63}\.?)+(?:[a-zA-Z]{2,})|(?:\d{1,3}\.){3}\d{1,3})$/ ) {
+            $response->error( "\"$vh\" " . &txt_isNotAValidVirtualHostName );
+            $result = 0;
         }
-        while( my($reg, $v) = each( %{ $rules } ) ) {
-            unless( $reg eq 'default' ) {
+        while ( my ( $reg, $v ) = each( %{$rules} ) ) {
+            # Test regular expressions
+            unless ( $reg eq 'default' ) {
                 $reg =~ s/#/\\#/g;
                 $safe->reval( $expr . "my \$r = qr#$reg#;" );
-                if( $@ ) {
-                    print STDERR "Syntax error in regexp ($vh -> $reg)\n";
-                    return 0;
+                if ($@) {
+                    $response->error( &txt_rule . " $vh -> \"$reg\" : " . &txt_syntaxError );
+                    $result = 0;
                 }
             }
-            unless( $v eq 'deny' or $v eq 'accept' ) {
-                $safe->reval( $expr . "my \$r=1 if($v);");
-                if( $@ ) {
-                    print STDERR "Syntax error in expression ($vh -> $reg)\n";
-                    return 0;
+            # Test boolean expressions
+            unless ( $v eq 'deny' or $v eq 'accept' ) {
+                # "=" may be a fault (but not "==")
+                if ( $v =~ /(?<=[^=<\?])=(?!=)/ ) {
+                    $response->warning( &txt_rule . " $vh -> \"$reg\" : " . &txt_containsAnAssignment );
+                }
+
+                $safe->reval( $expr . "my \$r=1 if($v);" );
+                if ($@) {
+                    $response->error( &txt_rule . " $vh -> \"$reg\" : " . &txt_syntaxError );
+                    $result = 0;
                 }
             }
         }
     }
     # Test exported headers
-    while( my($vh, $headers) = each( %{ $config->{exportedHeaders} } ) ) {
-        unless( $vh =~ /^\w[-\w\.]*$/ ) {
-            print STDERR "$vh is not a valid virtual host name\n";
-            return 0;
+    while ( my ( $vh, $headers ) = each( %{ $config->{exportedHeaders} } ) ) {
+        # Virtual host name has to be a fully qualified name or an IP address (CDA)
+        unless ( $vh =~ /^(?:(?=^.{1,254}$)(?:(?!\d+\.)[\w\-]{1,63}\.?)+(?:[a-zA-Z]{2,})|(?:\d{1,3}\.){3}\d{1,3})$/ ) {
+            $response->error( "\"$vh\" " . &txt_isNotAValidVirtualHostName );
+            $result = 0;
         }
-        while( my($header, $v) = each( %{ $headers } ) ) {
-            unless( $header =~ /^[\w][-\w]*$/ ) {
-                print STDERR "$header is not a valid HTTP header name ($vh)\n";
-                return 0;
+        while ( my ( $header, $v ) = each( %{$headers} ) ) {
+            # Header name syntax
+            unless ( $header =~ /^[\w][-\w]*$/ ) {
+                $response->error( "\"$header\" ($vh) " . &txt_isNotAValidHTTPHeaderName );
+                $result = 0;
             }
+            # "=" may be a fault ("==")
+            if ( $v =~ /(?<=[^=<\?])=(?!=)/ ) {
+                $response->warning( &txt_header . " $vh -> $header " . &txt_containsAnAssignment );
+            }
+            # Perl expression
             $safe->reval( $expr . "my \$r = $v;" );
-            if( $@ ) {
-                print STDERR "Syntax error in header expression ($vh -> $header)\n";
-                return 0;
+            if ($@) {
+                $response->error( &txt_header . " $vh -> $header " . &txt_syntaxError );
+                $result = 0;
             }
         }
     }
-    1;
+    return $result;
 }
 
 # Apply subroutines
@@ -514,35 +570,35 @@ sub checkConf {
 sub print_apply {
     my $self = shift;
     print $self->header( -type => "text/html" );
-    unless(-r $self->{applyConfFile} ) {
-        print "<h3>".&txt_canNotReadApplyConfFile."</h3>";
+    unless ( -r $self->{applyConfFile} ) {
+        print "<h3>" . &txt_canNotReadApplyConfFile . "</h3>";
         return;
     }
     print '<h3>' . &txt_result . ' : </h3><ul>';
     open F, $self->{applyConfFile};
     my $ua = new LWP::UserAgent( requests_redirectable => [] );
     $ua->timeout(10);
-    while(<F>) {
+    while (<F>) {
         local $| = 1;
         # pass blank lines and comments
-        next if(/^$/ or /^\s*#/);
+        next if ( /^$/ or /^\s*#/ );
         chomp;
         s/\r//;
         # each line must be like:
         #    host  http(s)://vhost/request/
-        my( $host, $request ) = (/^\s*([^\s]+)\s+([^\s]+)$/);
-        unless( $host and $request ) {
-            print "<li> ".&txt_invalidLine.": $_</li>";
+        my ( $host, $request ) = (/^\s*([^\s]+)\s+([^\s]+)$/);
+        unless ( $host and $request ) {
+            print "<li> " . &txt_invalidLine . ": $_</li>";
             next;
         }
         my ( $method, $vhost, $uri ) = ( $request =~ /^(https?):\/\/([^\/]+)(.*)$/ );
-        unless($vhost) {
+        unless ($vhost) {
             $vhost = $host;
-            $uri = $request;
+            $uri   = $request;
         }
         print "<li>$host ... ";
-        my $r = HTTP::Request->new( 'GET', "$method://$host$uri", HTTP::Headers->new( Host => $vhost ) );#, {Host => $vhost} );
-        my $response = $ua->request( $r );
+        my $r = HTTP::Request->new( 'GET', "$method://$host$uri", HTTP::Headers->new( Host => $vhost ) );
+        my $response = $ua->request($r);
         if ( $response->code != 200 ) {
             print join( ' ', &txt_error, ":", $response->code, $response->message, "</li>");
         }
