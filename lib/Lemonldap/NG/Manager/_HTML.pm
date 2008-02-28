@@ -8,7 +8,7 @@ use AutoLoader qw(AUTOLOAD);
 require Lemonldap::NG::Manager::_i18n;
 use Lemonldap::NG::Manager::Conf::Constants;
 
-our $VERSION = '0.28';
+our $VERSION = '0.29';
 
 # TODO: Delete buttons in headers and rules if 'read-only'
 
@@ -194,6 +194,9 @@ function onNodeSelect(nodeId) {
     }
     else if(nodeIs(nodeId,'cookieName')){
       help('cookieName');
+    }
+    else if(nodeIs(nodeId,'timeout')){
+      help('timeout');
     }
     else if(nodeIs(nodeId,'domain')){
       help('domain');
@@ -396,7 +399,7 @@ function deleteConf(){
 
 function ec(s){
   if((!s) || s=='') return s;
-  return s.replace(/>/g,'&gt;').replace(/</g,'&lt;');
+  return s.replace(/&(?!\#)/g,'&amp;').replace(/>/g,'&gt;').replace(/</g,'&lt;');
 }
 #;
 }

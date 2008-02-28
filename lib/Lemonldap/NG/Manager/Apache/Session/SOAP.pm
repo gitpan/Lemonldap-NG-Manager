@@ -3,7 +3,7 @@ package Lemonldap::NG::Manager::Apache::Session::SOAP;
 use strict;
 use SOAP::Lite;
 
-our $VERSION = 0.2;
+our $VERSION = 0.3;
 
 # Variables shared with SOAP::Transport::HTTP::Client
 our ( $user, $password ) = ( '', '' );
@@ -133,7 +133,12 @@ sub newsession {
 sub save {
     my $self = shift;
     return unless ($self->{modified});
-    return $self->_soapCall( "set", $self->{_session_id}, $self->{data} );
+    return $self->_soapCall( "set", $self->{data}->{_session_id}, $self->{data} );
+}
+
+sub delete {
+    my $self = shift;
+    return $self->_soapCall( "delete", $self->{data}->{_session_id} );
 }
 
 1;
