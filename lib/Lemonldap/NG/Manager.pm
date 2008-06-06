@@ -17,7 +17,7 @@ use MIME::Base64;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.84';
+our $VERSION = '0.85';
 
 sub new {
     my ( $class, $args ) = @_;
@@ -37,6 +37,10 @@ sub new {
     unless ( -r $self->{jsFile} ) {
         print STDERR qq#Unable to read $self->{jsFile}. You have to set "jsFile" parameter to /path/to/lemonldap-ng-manager.js\n#;
     }
+    $self->{pageTitle} ||= "LemonLDAP::NG Administration";
+    $self->{textareaW} ||= 50;
+    $self->{textareaH} ||= 5;
+    $self->{inputSize} ||= 30;
     unless ( __PACKAGE__->can('ldapServer') ) {
         Lemonldap::NG::Manager::_i18n::import( $ENV{HTTP_ACCEPT_LANGUAGE} );
     }
@@ -62,7 +66,17 @@ sub doall {
     # When using header_public here, Firefox does not load configuration
     # sometimes. Where is the bug ?
     print $self->header;
-    print $self->start_html;
+    # Test if we have to use specific CSS
+    if ( defined $self->{cssFile} ) {
+        print $self->start_html(
+               -style => $self->{cssFile},
+               -title => $self->{pageTitle},
+           )
+    } else {
+        print $self->start_html(
+               -title => $self->{pageTitle},
+           )
+    }
     print $self->main;
     print $self->end_html;
 }
@@ -210,7 +224,7 @@ sub buildTree {
         &txt_authenticationType, );
     $authParams->{portal} =
       $self->xmlField( "value", $config->{portal} || 'http://portal/',
-        "Portail" );
+        &txt_portal );
     $authParams->{securedCookie} =
       $self->xmlField( "value", $config->{securedCookie} || 0, &txt_securedCookie );
     $generalParameters->{whatToTrace} =
@@ -266,8 +280,6 @@ sub buildTree {
             $globalStorageOptions->{ sprintf( "go_%010d", $indice) } = $self->xmlField( "both", $config->{globalStorageOptions}->{$n}, $n );
             $indice++;
         }
-    }
-    else {
     }
 
     if ( $config->{locationRules} and %{ $config->{locationRules} } ) {

@@ -8,7 +8,7 @@ use AutoLoader qw(AUTOLOAD);
 require Lemonldap::NG::Manager::_i18n;
 use Lemonldap::NG::Manager::Conf::Constants;
 
-our $VERSION = '0.29';
+our $VERSION = '0.30';
 
 # TODO: Delete buttons in headers and rules if 'read-only'
 
@@ -74,7 +74,7 @@ EOT
 
 sub javascript {
     my $self = shift;
-    Lemonldap::NG::Manager::_i18n::import( $ENV{HTTP_ACCEPT_LANGUAGE} );
+    Lemonldap::NG::Manager::_i18n::import( $ENV{HTTP_ACCEPT_LANGUAGE} ) unless(__PACKAGE__->can('txt_newVirtualHost'));
     my %text;
     foreach(qw(newVirtualHost newMacro newGroup newVar newGSOpt saveConf
                deleteNode locationRules unableToSave confSaved saveFailure
@@ -128,15 +128,15 @@ function onNodeSelect(nodeId) {
     switch(tree.getUserData(nodeId,"modif")) {
       case 'text':
         k='valeur';
-        v='<input value="'+tree.getItemText(nodeId)+'" onChange="tree.setItemText('+"'"+nodeId+"'"+',this.value);">';
+        v='<input size="$self->{inputSize}" value="'+tree.getItemText(nodeId)+'" onChange="tree.setItemText('+"'"+nodeId+"'"+',this.value);">';
         break;
       case 'both':
-        k='<input value="'+tree.getItemText(nodeId)+'" onChange="tree.setItemText('+"'"+nodeId+"'"+',this.value)">';
-        v='<textarea cols=50 rows=5 onChange="tree.setUserData('+"'"+nodeId+"'"+','+"'"+'value'+"'"+',this.value)">'+tree.getUserData(nodeId,'value')+'</textarea>';
+        k='<input size="$self->{inputSize}" value="'+tree.getItemText(nodeId)+'" onChange="tree.setItemText('+"'"+nodeId+"'"+',this.value)">';
+        v='<textarea cols="$self->{textareaW}" rows="$self->{textareaH}" onChange="tree.setUserData('+"'"+nodeId+"'"+','+"'"+'value'+"'"+',this.value)">'+tree.getUserData(nodeId,'value')+'</textarea>';
         break;
       case 'value':
         k=tree.getItemText(nodeId);
-        v='<textarea cols=50 rows=5 onChange="tree.setUserData('+"'"+nodeId+"'"+','+"'"+'value'+"'"+',this.value)">'+tree.getUserData(nodeId,'value')+'</textarea>';
+        v='<textarea cols="$self->{textareaW}" rows="$self->{textareaH}" onChange="tree.setUserData('+"'"+nodeId+"'"+','+"'"+'value'+"'"+',this.value)">'+tree.getUserData(nodeId,'value')+'</textarea>';
         break;
       case 'ro':
         k=tree.getItemText(nodeId);
@@ -409,12 +409,19 @@ sub start_html {
     my %args = @_;
     $args{'-style'} = { -src => [ $args{'-style'} ] }
       if ( $args{'-style'} and !ref( $args{'-style'} ) );
-    push @{ $args{'-style'}->{'-src'} }, "$ENV{SCRIPT_NAME}?lmQuery=css";
+    unshift @{ $args{'-style'}->{'-src'} }, "$ENV{SCRIPT_NAME}?lmQuery=css";
     $args{'-title'} ||= 'Lemonldap::NG Configuration';
     $self->CGI::start_html(%args);
 }
 
 sub main {
+    Lemonldap::NG::Manager::_i18n::import( $ENV{HTTP_ACCEPT_LANGUAGE} ) unless(__PACKAGE__->can('txt_field'));
+    my %text;
+    foreach(qw(field value)) {
+        $text{$_} = &{"txt_$_"};
+        $text{$_} =~s/'/\\'/g;
+    }
+
 
     # Lemonldap::Manager javascripts;
     print
@@ -440,8 +447,8 @@ qq#<script type="text/javascript" src="$ENV{SCRIPT_NAME}?lmQuery=lmjs"></script>
                <p></p>
                <table border="1" width="100%" style="empty-cells:show;">
                 <tr>
-                 <th width="200">Champ</th>
-                 <th width="400">Valeur</th>
+                 <th width="200">$text{field}</th>
+                 <th width="400">$text{value}</th>
                 </tr>
                 <tr>
                  <td>

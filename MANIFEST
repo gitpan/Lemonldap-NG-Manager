@@ -50,6 +50,9 @@ example/lmConfig.mysql
 example/scripts/lmConfigEditor
 example/scripts/lmSessionDump
 example/soapserver.pl
+example/theme/logo_lemonldap-ng.png
+example/theme/default.css
+example/theme/hatch.gif
 lib/Lemonldap/NG/Manager.pm
 lib/Lemonldap/NG/Manager/_HTML.pm
 lib/Lemonldap/NG/Manager/_i18n.pm
@@ -75,7 +78,6 @@ t/03-Manager-Conf-DBI.t
 t/04-Manager-Conf-SOAP.t
 t/10-Manager.t
 t/20-Manager-i18n.t
-t/21-Manager-i18n-en.t
-t/22-Manager-i18n-fr.t
 t/50-Manager-SOAPServer.t
+t/99-pod.t
 TODO
