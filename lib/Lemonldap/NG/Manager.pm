@@ -17,7 +17,7 @@ use MIME::Base64;
 
 our @ISA = qw(Lemonldap::NG::Manager::Base);
 
-our $VERSION = '0.85';
+our $VERSION = '0.86';
 
 sub new {
     my ( $class, $args ) = @_;
@@ -65,7 +65,7 @@ sub doall {
     my $self = shift;
     # When using header_public here, Firefox does not load configuration
     # sometimes. Where is the bug ?
-    print $self->header;
+    print $self->header( -type => 'text/html; charset=utf8' );
     # Test if we have to use specific CSS
     if ( defined $self->{cssFile} ) {
         print $self->start_html(
@@ -102,7 +102,7 @@ sub print_libjs {
 sub print_lmjs {
     my $self = shift;
     print $self->header_public( $ENV{SCRIPT_FILENAME},
-        -type => 'text/javascript' );
+        -type => 'text/javascript; charset=utf8' );
     $self->javascript;
 }
 
@@ -110,7 +110,7 @@ sub print_lmjs {
 
 sub print_help {
     my $self = shift;
-    print $self->header_public;
+    print $self->header_public( $ENV{SCRIPT_FILENAME}, -type => 'text/html; charset=utf8' );
     Lemonldap::NG::Manager::Help::import( $ENV{HTTP_ACCEPT_LANGUAGE} )
       unless ( $self->can('help_groups') );
     my $chap = $self->param('help');
@@ -121,7 +121,7 @@ sub print_help {
 
 sub print_delete {
     my $self = shift;
-    print $self->header;
+    print $self->header( -type => 'text/html; charset=utf8' );
     Lemonldap::NG::Manager::Help::import( $ENV{HTTP_ACCEPT_LANGUAGE} )
       unless ( $self->can('help_groups') );
     if ( $self->config->delete( $self->param('cfgNum') ) ) {
@@ -136,7 +136,7 @@ sub print_delete {
 # Configuration download subroutines
 sub print_conf {
     my $self = shift;
-    print $self->header( -type => "text/xml", '-Cache-Control' => 'private' );
+    print $self->header( -type => "text/xml; charset=utf8", '-Cache-Control' => 'private' );
     $self->printXmlConf( { cfgNum => $self->param('cfgNum'), } );
     exit;
 }
@@ -157,6 +157,7 @@ sub printXmlConf {
         KeyAttr  => { item => 'id', username => 'name' },
         NoIndent => 1,
         NoSort   => 0,
+	XMLDecl  => '<?xml version="1.0" encoding="UTF-8"?>',
     );
 }
 
@@ -349,7 +350,7 @@ sub xmlField {
 sub print_upload {
     my $self  = shift;
     my $datas = shift;
-    print $self->header( -type => "text/javascript" );
+    print $self->header( -type => "text/javascript; charset=utf8" );
     my $r = Lemonldap::NG::Manager::_Response->new();
     my $tmp = $self->upload( $datas, $r );
     if ( $tmp == 0 ) {
@@ -598,7 +599,7 @@ sub checkConf {
 
 sub print_apply {
     my $self = shift;
-    print $self->header( -type => "text/html" );
+    print $self->header( -type => "text/html; charset=utf8" );
     unless ( -r $self->{applyConfFile} ) {
         print "<h3>" . &txt_canNotReadApplyConfFile . "</h3>";
         return;
@@ -690,7 +691,7 @@ system.
 
 You can also peersonalize the HTML code instead of using C<doall()>:
 
-  print $self->header_public;
+  print $self->header_public( $ENV{SCRIPT_FILENAME} );
   print $self->start_html (  # See CGI(3) for more about start_html
         -style => "/location/to/my.css",
         -title => "Example.com SSO configuration",

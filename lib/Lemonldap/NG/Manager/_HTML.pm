@@ -8,7 +8,7 @@ use AutoLoader qw(AUTOLOAD);
 require Lemonldap::NG::Manager::_i18n;
 use Lemonldap::NG::Manager::Conf::Constants;
 
-our $VERSION = '0.30';
+our $VERSION = '0.31';
 
 # TODO: Delete buttons in headers and rules if 'read-only'
 
@@ -74,17 +74,21 @@ EOT
 
 sub javascript {
     my $self = shift;
-    Lemonldap::NG::Manager::_i18n::import( $ENV{HTTP_ACCEPT_LANGUAGE} ) unless(__PACKAGE__->can('txt_newVirtualHost'));
+    Lemonldap::NG::Manager::_i18n::import( $ENV{HTTP_ACCEPT_LANGUAGE} )
+      unless ( __PACKAGE__->can('txt_newVirtualHost') );
     my %text;
-    foreach(qw(newVirtualHost newMacro newGroup newVar newGSOpt saveConf
+    foreach (
+        qw(newVirtualHost newMacro newGroup newVar newGSOpt saveConf
                deleteNode locationRules unableToSave confSaved saveFailure
                newRule newHeader httpHeaders waitingResult unknownError
                configurationWasChanged configLoaded warningConfNotApplied
                applyConf prevConf lastConf nextConf deleteVirtualHost
                areYouSure syntaxError deleteConf confirmDeleteConf
-               invalidVirtualHostName)) {
+        invalidVirtualHostName)
+      )
+    {
         $text{$_} = &{"txt_$_"};
-        $text{$_} =~s/'/\\'/g;
+        $text{$_} =~ s/'/\\'/g;
     }
     print qq#
 function loadConf(n) {
@@ -106,7 +110,7 @@ window.onload=function(){
   var w=X.clientWidth()-12;
   var h=X.clientHeight()-12;
   //var h=window.outerHeight;
-  s32=new xSplitter('idSplitter32',0,0,0,0,false,4,3*h/4,h/8,true,0);
+  s32=new xSplitter('idSplitter32',0,0,0,0,false,4,h/2,h/8,true,0);
   s3=new xSplitter('idSplitter3',0,0,w,h,true,4,w/4,w/8,true,4,null,s32);
   X.addEventListener(window,'resize',win_onresize,false);
   document.getElementById('help').innerHTML='<h3>$text{waitingResult}</h3>';
@@ -209,7 +213,7 @@ function onNodeSelect(nodeId) {
                            +button('$text{lastConf}','lastConf',nodeId)
                            +button('$text{deleteConf}','deleteConf',nodeId);
   #;
-    if( $self->{applyConfFile} ) {
+    if ( $self->{applyConfFile} ) {
         print "but+=button('$text{applyConf}','applyConf',nodeId);";
     }
   print qq#
@@ -410,18 +414,19 @@ sub start_html {
     $args{'-style'} = { -src => [ $args{'-style'} ] }
       if ( $args{'-style'} and !ref( $args{'-style'} ) );
     unshift @{ $args{'-style'}->{'-src'} }, "$ENV{SCRIPT_NAME}?lmQuery=css";
-    $args{'-title'} ||= 'Lemonldap::NG Configuration';
+    $args{'-title'}    ||= 'Lemonldap::NG Configuration';
+    $args{'-encoding'} ||= 'utf8';
     $self->CGI::start_html(%args);
 }
 
 sub main {
-    Lemonldap::NG::Manager::_i18n::import( $ENV{HTTP_ACCEPT_LANGUAGE} ) unless(__PACKAGE__->can('txt_field'));
+    Lemonldap::NG::Manager::_i18n::import( $ENV{HTTP_ACCEPT_LANGUAGE} )
+      unless ( __PACKAGE__->can('txt_field') );
     my %text;
-    foreach(qw(field value)) {
+    foreach (qw(field value)) {
         $text{$_} = &{"txt_$_"};
-        $text{$_} =~s/'/\\'/g;
+        $text{$_} =~ s/'/\\'/g;
     }
-
 
     # Lemonldap::Manager javascripts;
     print
