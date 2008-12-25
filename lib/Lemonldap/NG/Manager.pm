@@ -4,30 +4,60 @@ use strict;
 
 use XML::Simple;
 
-use Lemonldap::NG::Manager::Base;
-use Lemonldap::NG::Manager::Conf;
+use Lemonldap::NG::Common::CGI;
+use Lemonldap::NG::Common::Conf;
 use Lemonldap::NG::Manager::_HTML;
 require Lemonldap::NG::Manager::_Response;
 require Lemonldap::NG::Manager::_i18n;
 require Lemonldap::NG::Manager::Help;
-use Lemonldap::NG::Manager::Conf::Constants;
+use Lemonldap::NG::Common::Conf::Constants;
 use LWP::UserAgent;
 use Safe;
 use MIME::Base64;
 
-our @ISA = qw(Lemonldap::NG::Manager::Base);
+use base qw(Lemonldap::NG::Common::CGI);
+our @ISA;
 
-our $VERSION = '0.86';
+our $VERSION = '0.87';
+
+# Secure jail
+our $safe;
+
+##@method private object safe()
+# Provide the security jail.
+#@return Safe object
+sub safe {
+    my $self = shift;
+    return $safe if ($safe);
+    $safe = new Safe;
+    my @t =
+      $self->{customFunctions} ? split( /\s+/, $self->{customFunctions} ) : ();
+    foreach (@t) {
+        s/^.*:://;
+        next if ( $self->can($_) );
+        eval "sub $_ {1}";
+        print STDERR $@ if ($@);
+    }
+    $safe->share( '&encode_base64', @t );
+    return $safe;
+}
 
 sub new {
     my ( $class, $args ) = @_;
-    my $self = $class->SUPER::new();
+    my $self;
+    if ( $args->{protection} ) {
+        unshift @ISA, "Lemonldap::NG::Handler::CGI";
+        $self = $class->SUPER::new($args);
+    }
+    else {
+        $self = $class->SUPER::new();
+    }
     unless ($args) {
         print STDERR "parameters are required, I can't start so\n";
         return 0;
     }
     %$self = ( %$self, %$args );
-    foreach (qw(configStorage dhtmlXTreeImageLocation)) {
+    foreach (qw(dhtmlXTreeImageLocation)) {
         unless ( $self->{$_} ) {
             print STDERR qq/The "$_" parameter is required\n/;
             return 0;
@@ -35,14 +65,16 @@ sub new {
     }
     $self->{jsFile} ||= $self->_dir . "lemonldap-ng-manager.js";
     unless ( -r $self->{jsFile} ) {
-        print STDERR qq#Unable to read $self->{jsFile}. You have to set "jsFile" parameter to /path/to/lemonldap-ng-manager.js\n#;
+        print STDERR
+qq#Unable to read $self->{jsFile}. You have to set "jsFile" parameter to /path/to/lemonldap-ng-manager.js\n#;
     }
     $self->{pageTitle} ||= "LemonLDAP::NG Administration";
     $self->{textareaW} ||= 50;
     $self->{textareaH} ||= 5;
     $self->{inputSize} ||= 30;
     unless ( __PACKAGE__->can('ldapServer') ) {
-        Lemonldap::NG::Manager::_i18n::import( $ENV{HTTP_ACCEPT_LANGUAGE} );
+        Lemonldap::NG::Manager::_i18n::import( $self->{language}
+              || $ENV{HTTP_ACCEPT_LANGUAGE} );
     }
     if ( $self->param('lmQuery') ) {
         my $tmp = "print_" . $self->param('lmQuery');
@@ -63,19 +95,20 @@ sub new {
 # Subroutines to make all the work
 sub doall {
     my $self = shift;
+
     # When using header_public here, Firefox does not load configuration
     # sometimes. Where is the bug ?
     print $self->header( -type => 'text/html; charset=utf8' );
+
     # Test if we have to use specific CSS
     if ( defined $self->{cssFile} ) {
         print $self->start_html(
-               -style => $self->{cssFile},
-               -title => $self->{pageTitle},
-           )
-    } else {
-        print $self->start_html(
-               -title => $self->{pageTitle},
-           )
+            -style => $self->{cssFile},
+            -title => $self->{pageTitle},
+        );
+    }
+    else {
+        print $self->start_html( -title => $self->{pageTitle}, );
     }
     print $self->main;
     print $self->end_html;
@@ -110,8 +143,10 @@ sub print_lmjs {
 
 sub print_help {
     my $self = shift;
-    print $self->header_public( $ENV{SCRIPT_FILENAME}, -type => 'text/html; charset=utf8' );
-    Lemonldap::NG::Manager::Help::import( $ENV{HTTP_ACCEPT_LANGUAGE} )
+    print $self->header_public( $ENV{SCRIPT_FILENAME},
+        -type => 'text/html; charset=utf8' );
+    Lemonldap::NG::Manager::Help::import( $self->{language}
+          || $ENV{HTTP_ACCEPT_LANGUAGE} )
       unless ( $self->can('help_groups') );
     my $chap = $self->param('help');
     eval { no strict "refs"; &{"help_$chap"} };
@@ -122,7 +157,8 @@ sub print_help {
 sub print_delete {
     my $self = shift;
     print $self->header( -type => 'text/html; charset=utf8' );
-    Lemonldap::NG::Manager::Help::import( $ENV{HTTP_ACCEPT_LANGUAGE} )
+    Lemonldap::NG::Manager::Help::import( $self->{language}
+          || $ENV{HTTP_ACCEPT_LANGUAGE} )
       unless ( $self->can('help_groups') );
     if ( $self->config->delete( $self->param('cfgNum') ) ) {
         print &txt_configurationDeleted;
@@ -136,7 +172,10 @@ sub print_delete {
 # Configuration download subroutines
 sub print_conf {
     my $self = shift;
-    print $self->header( -type => "text/xml; charset=utf8", '-Cache-Control' => 'private' );
+    print $self->header(
+        -type            => "text/xml; charset=utf8",
+        '-Cache-Control' => 'private'
+    );
     $self->printXmlConf( { cfgNum => $self->param('cfgNum'), } );
     exit;
 }
@@ -152,12 +191,13 @@ sub printXmlConf {
     my $self = shift;
     print XMLout(
         $self->buildTree(@_),
+
         #XMLDecl  => "<?xml version='1.0' encoding='iso-8859-1'?>",
         RootName => 'tree',
         KeyAttr  => { item => 'id', username => 'name' },
         NoIndent => 1,
         NoSort   => 0,
-	XMLDecl  => '<?xml version="1.0" encoding="UTF-8"?>',
+        XMLDecl  => '<?xml version="1.0" encoding="UTF-8"?>',
     );
 }
 
@@ -166,7 +206,7 @@ sub buildTree {
     my $config = $self->config->getConf(@_);
     $config = $self->default unless ($config);
     my $indice = 1;
-    my $tree = {
+    my $tree   = {
         id   => '0',
         item => {
             id   => 'root',
@@ -180,9 +220,7 @@ sub buildTree {
                             text => &txt_exportedVars,
                             item => {},
                         },
-                        macros => {
-                            text => &txt_macros,
-                        },
+                        macros         => { text => &txt_macros, },
                         ldapParameters => {
                             text => &txt_ldapParameters,
                             item => {},
@@ -211,13 +249,17 @@ sub buildTree {
     };
     my $generalParameters = $tree->{item}->{item}->{generalParameters}->{item};
     my $exportedVars =
-      $tree->{item}->{item}->{generalParameters}->{item}->{exportedVars}->{item};
+      $tree->{item}->{item}->{generalParameters}->{item}->{exportedVars}
+      ->{item};
     my $ldapParameters =
-      $tree->{item}->{item}->{generalParameters}->{item}->{ldapParameters}->{item};
+      $tree->{item}->{item}->{generalParameters}->{item}->{ldapParameters}
+      ->{item};
     my $sessionStorage =
-      $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item};
+      $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}
+      ->{item};
     my $globalStorageOptions =
-      $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item}->{globalStorageOptions}->{item};
+      $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}
+      ->{item}->{globalStorageOptions}->{item};
     my $authParams =
       $tree->{item}->{item}->{generalParameters}->{item}->{authParams}->{item};
     $authParams->{authentication} =
@@ -227,12 +269,15 @@ sub buildTree {
       $self->xmlField( "value", $config->{portal} || 'http://portal/',
         &txt_portal );
     $authParams->{securedCookie} =
-      $self->xmlField( "value", $config->{securedCookie} || 0, &txt_securedCookie );
+      $self->xmlField( "value", $config->{securedCookie} || 0,
+        &txt_securedCookie );
     $generalParameters->{whatToTrace} =
-      $self->xmlField( "value", $config->{whatToTrace} || '$uid', &txt_whatToTrace );
+      $self->xmlField( "value", $config->{whatToTrace} || '$uid',
+        &txt_whatToTrace );
 
     $generalParameters->{domain} =
-      $self->xmlField( "value", $config->{domain} || 'example.com', &txt_domain, );
+      $self->xmlField( "value", $config->{domain} || 'example.com', &txt_domain,
+      );
     $generalParameters->{cookieName} =
       $self->xmlField( "value", $config->{cookieName} || 'lemonldap',
         &txt_cookieName, );
@@ -260,13 +305,15 @@ sub buildTree {
 
     if ( $config->{exportedVars} ) {
         foreach my $n ( sort keys %{ $config->{exportedVars} } ) {
-            $exportedVars->{ sprintf( "ev_%010d", $indice) } = $self->xmlField( "both", $config->{exportedVars}->{$n}, $n );
+            $exportedVars->{ sprintf( "ev_%010d", $indice ) } =
+              $self->xmlField( "both", $config->{exportedVars}->{$n}, $n );
             $indice++;
         }
     }
     else {
         foreach (qw(cn mail uid)) {
-            $exportedVars->{ sprintf( "ev_%010d", $indice) } = $self->xmlField( 'both', $_, $_ );
+            $exportedVars->{ sprintf( "ev_%010d", $indice ) } =
+              $self->xmlField( 'both', $_, $_ );
             $indice++;
         }
     }
@@ -274,11 +321,15 @@ sub buildTree {
     if ( $config->{globalStorageOptions}
         and %{ $config->{globalStorageOptions} } )
     {
-        $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item}->{globalStorageOptions}->{item} = {};
+        $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}
+          ->{item}->{globalStorageOptions}->{item} = {};
         $globalStorageOptions =
-          $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}->{item}->{globalStorageOptions}->{item};
+          $tree->{item}->{item}->{generalParameters}->{item}->{sessionStorage}
+          ->{item}->{globalStorageOptions}->{item};
         foreach my $n ( sort keys %{ $config->{globalStorageOptions} } ) {
-            $globalStorageOptions->{ sprintf( "go_%010d", $indice) } = $self->xmlField( "both", $config->{globalStorageOptions}->{$n}, $n );
+            $globalStorageOptions->{ sprintf( "go_%010d", $indice ) } =
+              $self->xmlField( "both", $config->{globalStorageOptions}->{$n},
+                $n );
             $indice++;
         }
     }
@@ -286,6 +337,7 @@ sub buildTree {
     if ( $config->{locationRules} and %{ $config->{locationRules} } ) {
         $tree->{item}->{item}->{virtualHosts}->{item} = {};
         my $virtualHost = $tree->{item}->{item}->{virtualHosts}->{item};
+
         # TODO: split locationRules into 2 arrays
         foreach my $host ( sort keys %{ $config->{locationRules} } ) {
             my $rules = $config->{locationRules}->{$host};
@@ -300,13 +352,15 @@ sub buildTree {
             };
             foreach my $reg ( sort keys %$rules ) {
                 my $type = ( $reg eq 'default' ) ? 'value' : 'both';
-                $virtualHost->{$vh_id}->{item}->{$ir}->{item}->{ sprintf( "r_%010d", $indice ) } =
-                  $self->xmlField( $type, $rules->{$reg} , $reg );
+                $virtualHost->{$vh_id}->{item}->{$ir}->{item}
+                  ->{ sprintf( "r_%010d", $indice ) } =
+                  $self->xmlField( $type, $rules->{$reg}, $reg );
                 $indice++;
             }
             my $headers = $config->{exportedHeaders}->{$host};
             foreach my $h ( sort keys %$headers ) {
-                $virtualHost->{$vh_id}->{item}->{$ih}->{item}->{ sprintf( "h_%010d", $indice ) } =
+                $virtualHost->{$vh_id}->{item}->{$ih}->{item}
+                  ->{ sprintf( "h_%010d", $indice ) } =
                   $self->xmlField( "both", $headers->{$h}, $h );
                 $indice++;
             }
@@ -315,16 +369,20 @@ sub buildTree {
     if ( $config->{groups} and %{ $config->{groups} } ) {
         $tree->{item}->{item}->{groups}->{item} = {};
         my $groups = $tree->{item}->{item}->{groups}->{item};
-        foreach my $group ( sort keys  %{ $config->{groups} } ) {
-            $groups->{ sprintf( "g_%010d", $indice) } = $self->xmlField( 'both', $config->{groups}->{$group}, $group );
+        foreach my $group ( sort keys %{ $config->{groups} } ) {
+            $groups->{ sprintf( "g_%010d", $indice ) } =
+              $self->xmlField( 'both', $config->{groups}->{$group}, $group );
             $indice++;
         }
     }
     if ( $config->{macros} and %{ $config->{macros} } ) {
-        $tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item} = {};
-        my $macros = $tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item};
+        $tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item} =
+          {};
+        my $macros =
+          $tree->{item}->{item}->{generalParameters}->{item}->{macros}->{item};
         foreach my $macro ( sort keys %{ $config->{macros} } ) {
-            $macros->{"m_$indice"} = $self->xmlField( 'both', $config->{macros}->{$macro}, $macro );
+            $macros->{"m_$indice"} =
+              $self->xmlField( 'both', $config->{macros}->{$macro}, $macro );
             $indice++;
         }
     }
@@ -382,13 +440,16 @@ sub tree2conf {
     my ( $self, $tree, $response ) = @_;
     $tree = XMLin($$tree);
     my $config = {};
+
     # Load config number
     ( $config->{cfgNum} ) = ( $tree->{text} =~ /(\d+)$/ );
+
     # Load groups
     while ( my ( $g, $h ) = each( %{ $tree->{groups} } ) ) {
         next unless ( ref($h) );
         $config->{groups}->{ $h->{text} } = $h->{value};
     }
+
     # Load virtualHosts
     while ( my ( $k, $h ) = each( %{ $tree->{virtualHosts} } ) ) {
         next unless ( ref($h) );
@@ -399,6 +460,7 @@ sub tree2conf {
             $eh = $h->{$_} if ( $_ =~ /exportedHeaders/ );
         }
         my $vh = $h->{text};
+
         # TODO: split locationRules into 2 arrays
       LR: foreach my $r ( values(%$lr) ) {
             next LR unless ( ref($r) );
@@ -409,17 +471,28 @@ sub tree2conf {
             $config->{exportedHeaders}->{$vh}->{ $h->{text} } = $h->{value};
         }
     }
+
     # General parameters
     $config->{cookieName}  = $tree->{generalParameters}->{cookieName}->{value};
-    $config->{timeout}  = $tree->{generalParameters}->{timeout}->{value};
+    $config->{timeout}     = $tree->{generalParameters}->{timeout}->{value};
     $config->{whatToTrace} = $tree->{generalParameters}->{whatToTrace}->{value};
     $config->{domain}      = $tree->{generalParameters}->{domain}->{value};
-    $config->{globalStorage} = $tree->{generalParameters}->{sessionStorage}->{globalStorage}->{value};
-    while ( my ( $v, $h ) = each( %{ $tree->{generalParameters}->{sessionStorage}->{globalStorageOptions} })) {
+    $config->{globalStorage} =
+      $tree->{generalParameters}->{sessionStorage}->{globalStorage}->{value};
+    while (
+        my ( $v, $h ) = each(
+            %{
+                $tree->{generalParameters}->{sessionStorage}
+                  ->{globalStorageOptions}
+              }
+        )
+      )
+    {
         next unless ( ref($h) );
         $config->{globalStorageOptions}->{ $h->{text} } = $h->{value};
     }
-    while ( my ( $v, $h ) = each( %{ $tree->{generalParameters}->{macros} } ) ) {
+    while ( my ( $v, $h ) = each( %{ $tree->{generalParameters}->{macros} } ) )
+    {
         next unless ( ref($h) );
         $config->{macros}->{ $h->{text} } = $h->{value};
     }
@@ -451,142 +524,187 @@ sub checkConf {
     my $expr     = '';
     my $result   = 1;
     my $assign   = qr/(?<=[^=<!>\?])=(?![=~])/;
+
     # Check cookie name
     unless ( $config->{cookieName} =~ /^[a-zA-Z]\w*$/ ) {
         $result = 0;
-        $response->error( '"' . $config->{cookieName} . '" ' . &txt_isNotAValidCookieName );
+        $response->error(
+            '"' . $config->{cookieName} . '" ' . &txt_isNotAValidCookieName );
     }
+
     # Check session timeout
     unless ( $config->{timeout} =~ /^\d+$/ ) {
         $result = 0;
-        $response->error( '"' . $config->{timeout}  . '" ' . &txt_isNotANumber );
+        $response->error( '"' . $config->{timeout} . '" ' . &txt_isNotANumber );
     }
+
     # Check domain name
-    unless ( $config->{domain} =~ /^(?=^.{1,254}$)\.?(?:(?!\d+\.)[\w\-]{1,63}\.?)+(?:[a-zA-Z]{2,})$/ ) {
+    unless ( $config->{domain} =~
+        /^(?=^.{1,254}$)\.?(?:(?!\d+\.)[\w\-]{1,63}\.?)+(?:[a-zA-Z]{2,})$/ )
+    {
         $result = 0;
-        $response->error( '"' . $config->{domain} . '" ' . &txt_isNotAValidCookieName );
+        $response->error(
+            '"' . $config->{domain} . '" ' . &txt_isNotAValidCookieName );
     }
+
     # Customized variables
     foreach ( @{ $self->{customVars} } ) {
         $expr .= "my \$$_ = '1';";
     }
+
     # Load variables
     foreach ( keys %{ $config->{exportedVars} } ) {
+
         # Reserved words
         if ( $_ eq 'groups' or $_ !~ /^\w+$/ ) {
             $response->error( "\"$_\" " . &txt_isNotAValidAttributeName );
             $result = 0;
         }
         if ( $config->{exportedVars}->{$_} !~ /^\w+$/ ) {
-            $response->error( "\"$config->{exportedVars}->{$_}\" " . &txt_isNotAValidLDAPAttributeName );
+            $response->error( "\"$config->{exportedVars}->{$_}\" "
+                  . &txt_isNotAValidLDAPAttributeName );
             $result = 0;
         }
         $expr .= "my \$$_ = '1';";
     }
+
     # Load and check macros
-    my $safe = new Safe;
-    $safe->share('&encode_base64');
-    $safe->reval($expr);
+    $self->safe->reval($expr);
     if ($@) {
         $result = 0;
         $response->error( &txt_unknownErrorInVars . " ($@)" );
     }
     while ( my ( $k, $v ) = each( %{ $config->{macros} } ) ) {
+
         # Syntax
         if ( $k eq 'groups' or $k !~ /^[a-zA-Z]\w*$/ ) {
             $response->error( "\"$k\" " . &txt_isNotAValidMacroName );
             $result = 0;
         }
+
         # "=" may be a fault ("==")
         if ( $v =~ $assign ) {
-            $response->warning( &txt_macro . " $k " . &txt_containsAnAssignment );
+            $response->warning(
+                &txt_macro . " $k " . &txt_containsAnAssignment );
         }
+
         # Test macro values;
         $expr .= "my \$$k = $v;";
-        $safe->reval($expr);
+        $self->safe->reval($expr);
         if ($@) {
-            $response->error( &txt_macro . " $k : " . &txt_syntaxError . " : $@");
+            $response->error(
+                &txt_macro . " $k : " . &txt_syntaxError . " : $@" );
             $result = 0;
         }
     }
+
     # TODO: check module name
     # Check whatToTrace
     unless ( $config->{whatToTrace} =~ /^\$?[a-zA-Z]\w*$/ ) {
         $response->error(&txt_invalidWhatToTrace);
         $result = 0;
     }
+
     # Test groups
     $expr .= 'my $groups;';
     while ( my ( $k, $v ) = each( %{ $config->{groups} } ) ) {
+
         # Name syntax
         if ( $k !~ /^[\w-]+$/ ) {
             $response->error( "\"$k\" " . &txt_isNotAValidGroupName );
             $result = 0;
         }
+
         # "=" may be a fault (but not "==")
         if ( $v =~ $assign ) {
-            $response->warning( &txt_group . " $k " . &txt_containsAnAssignment );
+            $response->warning(
+                &txt_group . " $k " . &txt_containsAnAssignment );
         }
+
         # Test boolean expression
-        $safe->reval( $expr . "\$groups = '$k' if($v);" );
+        $self->safe->reval( $expr . "\$groups = '$k' if($v);" );
         if ($@) {
             $response->error( &txt_group . " $k " . &txt_syntaxError );
             $result = 0;
         }
     }
+
     # Test rules
     while ( my ( $vh, $rules ) = each( %{ $config->{locationRules} } ) ) {
-        # Virtual host name has to be a fully qualified name or an IP address (CDA)
-        unless ( $vh =~ /^(?:(?=^.{1,254}$)(?:(?!\d+\.)[\w\-]{1,63}\.?)+(?:[a-zA-Z]{2,})|(?:\d{1,3}\.){3}\d{1,3})$/ ) {
+
+     # Virtual host name has to be a fully qualified name or an IP address (CDA)
+        unless ( $vh =~
+/^(?:(?=^.{1,254}$)(?:(?!\d+\.)[\w\-]{1,63}\.?)+(?:[a-zA-Z]{2,})|(?:\d{1,3}\.){3}\d{1,3})$/
+          )
+        {
             $response->error( "\"$vh\" " . &txt_isNotAValidVirtualHostName );
             $result = 0;
         }
         while ( my ( $reg, $v ) = each( %{$rules} ) ) {
+
             # Test regular expressions
             unless ( $reg eq 'default' ) {
                 $reg =~ s/#/\\#/g;
-                $safe->reval( $expr . "my \$r = qr#$reg#;" );
+                $self->safe->reval( $expr . "my \$r = qr#$reg#;" );
                 if ($@) {
-                    $response->error( &txt_rule . " $vh -> \"$reg\" : " . &txt_syntaxError );
+                    $response->error(
+                        &txt_rule . " $vh -> \"$reg\" : " . &txt_syntaxError );
                     $result = 0;
                 }
             }
+
             # Test boolean expressions
             unless ( $v =~ /^(?:accept$|deny$|logout)/ ) {
+
                 # "=" may be a fault (but not "==")
                 if ( $v =~ $assign ) {
-                    $response->warning( &txt_rule . " $vh -> \"$reg\" : " . &txt_containsAnAssignment );
+                    $response->warning( &txt_rule
+                          . " $vh -> \"$reg\" : "
+                          . &txt_containsAnAssignment );
                 }
 
-                $safe->reval( $expr . "my \$r=1 if($v);" );
+                $self->safe->reval( $expr . "my \$r=1 if($v);" );
                 if ($@) {
-                    $response->error( &txt_rule . " $vh -> \"$reg\" : " . &txt_syntaxError );
+                    $response->error(
+                        &txt_rule . " $vh -> \"$reg\" : " . &txt_syntaxError );
                     $result = 0;
                 }
             }
         }
     }
+
     # Test exported headers
     while ( my ( $vh, $headers ) = each( %{ $config->{exportedHeaders} } ) ) {
-        # Virtual host name has to be a fully qualified name or an IP address (CDA)
-        unless ( $vh =~ /^(?:(?=^.{1,254}$)(?:(?!\d+\.)[\w\-]{1,63}\.?)+(?:[a-zA-Z]{2,})|(?:\d{1,3}\.){3}\d{1,3})$/ ) {
+
+     # Virtual host name has to be a fully qualified name or an IP address (CDA)
+        unless ( $vh =~
+/^(?:(?=^.{1,254}$)(?:(?!\d+\.)[\w\-]{1,63}\.?)+(?:[a-zA-Z]{2,})|(?:\d{1,3}\.){3}\d{1,3})$/
+          )
+        {
             $response->error( "\"$vh\" " . &txt_isNotAValidVirtualHostName );
             $result = 0;
         }
         while ( my ( $header, $v ) = each( %{$headers} ) ) {
+
             # Header name syntax
             unless ( $header =~ /^[\w][-\w]*$/ ) {
-                $response->error( "\"$header\" ($vh) " . &txt_isNotAValidHTTPHeaderName );
+                $response->error(
+                    "\"$header\" ($vh) " . &txt_isNotAValidHTTPHeaderName );
                 $result = 0;
             }
+
             # "=" may be a fault ("==")
             if ( $v =~ $assign ) {
-                $response->warning( &txt_header . " $vh -> $header " . &txt_containsAnAssignment );
+                $response->warning( &txt_header
+                      . " $vh -> $header "
+                      . &txt_containsAnAssignment );
             }
+
             # Perl expression
-            $safe->reval( $expr . "my \$r = $v;" );
+            $self->safe->reval( $expr . "my \$r = $v;" );
             if ($@) {
-                $response->error( &txt_header . " $vh -> $header " . &txt_syntaxError );
+                $response->error(
+                    &txt_header . " $vh -> $header " . &txt_syntaxError );
                 $result = 0;
             }
         }
@@ -610,10 +728,12 @@ sub print_apply {
     $ua->timeout(10);
     while (<F>) {
         local $| = 1;
+
         # pass blank lines and comments
         next if ( /^$/ or /^\s*#/ );
         chomp;
         s/\r//;
+
         # each line must be like:
         #    host  http(s)://vhost/request/
         my ( $host, $request ) = (/^\s*([^\s]+)\s+([^\s]+)$/);
@@ -621,16 +741,20 @@ sub print_apply {
             print "<li> " . &txt_invalidLine . ": $_</li>";
             next;
         }
-        my ( $method, $vhost, $uri ) = ( $request =~ /^(https?):\/\/([^\/]+)(.*)$/ );
+        my ( $method, $vhost, $uri ) =
+          ( $request =~ /^(https?):\/\/([^\/]+)(.*)$/ );
         unless ($vhost) {
             $vhost = $host;
             $uri   = $request;
         }
         print "<li>$host ... ";
-        my $r = HTTP::Request->new( 'GET', "$method://$host$uri", HTTP::Headers->new( Host => $vhost ) );
+        my $r =
+          HTTP::Request->new( 'GET', "$method://$host$uri",
+            HTTP::Headers->new( Host => $vhost ) );
         my $response = $ua->request($r);
         if ( $response->code != 200 ) {
-            print join( ' ', &txt_error, ":", $response->code, $response->message, "</li>");
+            print join( ' ',
+                &txt_error, ":", $response->code, $response->message, "</li>" );
         }
         else {
             print "OK</li>";
@@ -642,7 +766,7 @@ sub print_apply {
 # Internal subroutines
 sub _dir {
     my $d = $ENV{SCRIPT_FILENAME};
-    $d =~ s#[^/]*$##;
+    $d =~ s/[^\/]*$//;
     return $d;
 }
 
@@ -650,9 +774,10 @@ sub config {
     my $self = shift;
     return $self->{_config} if $self->{_config};
     $self->{_config} =
-      Lemonldap::NG::Manager::Conf->new( $self->{configStorage} );
+      Lemonldap::NG::Common::Conf->new( $self->{configStorage} );
     unless ( $self->{_config} ) {
-        die "Configuration not loaded\n";
+        $self->abort( "Configuration not loaded\n",
+            $Lemonldap::NG::Common::Conf::msg );
     }
     return $self->{_config};
 }
@@ -728,8 +853,8 @@ configuration database system. the key 'type' must be set. Example:
       dbiPassword => "pass",
   }
 
-See L<Lemonldap::Manager::NG::Manager::Conf::File> or
-L<Lemonldap::Manager::NG::Manager::Conf::DBI> to know which keys are required.
+See L<Lemonldap::Manager::NG::Common::Conf::File> or
+L<Lemonldap::Manager::NG::Common::Conf::DBI> to know which keys are required.
 
 =item * B<dhtmlXTreeImageLocation> (required): the location of the directory
 containing dhtmlXTree images (provided in example/imgs). If this parameter
