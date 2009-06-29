@@ -7,10 +7,11 @@ WriteMakefile(
     VERSION_FROM => 'lib/Lemonldap/NG/Manager.pm',    # finds $VERSION
     PREREQ_PM    => {
         'CGI'                    => 3.08,
-        'XML::Simple'            => 0,
+        'IO::String'             => 0,
+        'Lemonldap::NG::Common'  => 0.93,
+        'Lemonldap::NG::Handler' => 0.91,
         'LWP::UserAgent'         => 0,
-        'Lemonldap::NG::Common'  => 0.9,
-        'Lemonldap::NG::Handler' => 0.9,
+        'XML::Simple'            => 0,
     },    # e.g., Module::Name => 1.1
     (
         $] >= 5.005

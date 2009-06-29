@@ -1,51 +1,65 @@
+## @file
+# Session explorer
+
+## @class
+# Session explorer.
 package Lemonldap::NG::Manager::Sessions;
 
 use strict;
 use Lemonldap::NG::Handler::CGI qw(:globalStorage :locationRules);
-use Lemonldap::NG::Common::Apache::Session;
+use Lemonldap::NG::Common::Apache::Session;    #inherits
 
-our $VERSION = '0.1';
+#inherits Apache::Session
+
+our $whatToTrace;
+*whatToTrace = \$Lemonldap::NG::Handler::_CGI::whatToTrace;
+
+our $VERSION = '0.11';
 
 use base qw(Lemonldap::NG::Handler::CGI);
 
-# Cleaner for Lemonldap::NG : removes old sessions from Apache::Session
-#
-# This module is written to be used by cron to clean old sessions from
-# Apache::Session.
-
+## @cmethod Lemonldap::NG::Manager::Sessions new(hashRef args)
+# Constructor.
+# @param $args Arguments for Lemonldap::NG::Handler::CGI::new(). Must contains
+# 3 keys for Lemonldap::NG::Manager::Sessions:
+# - jqueryUri HTTP path to jquery.js
+# - personnalCss Optional HTTP path to custom CSS file
+# - imagePath HTTP path to the images directory
+# @return New Lemonldap::NG::Manager::Sessions object
 sub new {
     my ( $class, $args ) = @_;
     my $self = $class->SUPER::new($args)
       or $class->abort( 'Unable to start ' . __PACKAGE__,
         'See Apache logs for more' );
     foreach (qw(jqueryUri personnalCss imagePath)) {
-        $self->{$_} = $args->{ $_
-          }; # or print STDERR "Warning, $_ is not set, falling to default value\n";
+        $self->{$_}
+          or $self->lmLog( "$_ is not set, falling to default value", 'debug' );
     }
     eval "use $globalStorage";
     $class->abort( "Unable to load $globalStorage", $@ ) if ($@);
     return $self;
 }
 
+## @method void process()
+# Main method.
 sub process {
     my $self = shift;
 
     if ( $ENV{PATH_INFO} eq "/css" ) {
-        print $self->header(
-            '-Cache-Control' => 'public',
-            -type            => 'text/css',
+        print $self->header_public( $ENV{SCRIPT_FILENAME}, -type => 'text/css',
         );
         $self->css;
         exit;
     }
     elsif ( $ENV{PATH_INFO} eq "/js" ) {
-        print $self->header(
-            '-Cache-Control' => 'public',
-            -type            => 'text/javascript',
-        );
+        print $self->header_public( $ENV{SCRIPT_FILENAME},
+            -type => 'text/javascript', );
         $self->js;
         exit;
     }
+
+    # Check if we use X-FORWARDED-FOR header for IP
+    my $ipField = $self->{useXForwardedForIP} ? "xForwardedForAddr" : "ipAddr";
 
     # Beginning of the job
 
@@ -57,7 +71,9 @@ sub process {
             sub {
                 my $entry = shift;
                 my $id    = shift;
-                push @{ $byUid->{ $entry->{uid} }->{ $entry->{ipAddr} } },
+                next if($entry->{_httpSessionType});
+                push
+                  @{ $byUid->{ $entry->{$whatToTrace} }->{ $entry->{$ipField} } },
                   { id => $id, _utime => $entry->{_utime} };
                 undef;
             }
@@ -96,8 +112,10 @@ sub process {
             sub {
                 my $entry = shift;
                 my $id    = shift;
-                if ( $entry->{ipAddr} =~ /^$reip$/ ) {
-                    push @{ $byUid->{ $entry->{ipAddr} }->{ $entry->{uid} } },
+                next if($entry->{_httpSessionType});
+                if ( $entry->{$ipField} =~ /^$reip$/ ) {
+                    push @{ $byUid->{ $entry->{$ipField} }
+                          ->{ $entry->{$whatToTrace} } },
                       { id => $id, _utime => $entry->{_utime} };
                 }
                 undef;
@@ -136,8 +154,9 @@ sub process {
             sub {
                 my $entry = shift;
                 my $id    = shift;
-                if ( $entry->{uid} =~ /^$reuser$/ ) {
-                    push @{ $byUid->{ $entry->{uid} } },
+                next if($entry->{_httpSessionType});
+                if ( $entry->{$whatToTrace} =~ /^$reuser$/ ) {
+                    push @{ $byUid->{ $entry->{$whatToTrace} } },
                       { id => $id, _utime => $entry->{_utime} };
                 }
                 undef;
@@ -172,9 +191,16 @@ sub process {
         }
         else {
             my $uid = $h{uid};
+            if($h{_httpSession}) {
+                my %h2;
+                eval { tie %h2, $globalStorage, $h{_httpSession}, $globalStorageOptions; tied(%h2)->delete(); };
+                if ($@) {
+                    print "<strong>Error : $@</strong><br/>";
+                }
+            }
             eval { tied(%h)->delete(); };
             if ($@) {
-                print "<strong>Error : $@</strong>\n";
+                print "<strong>Error : $@</strong><br/>";
             }
             else {
                 print "<strong>Session effac&eacute;e ($uid)</strong>";
@@ -223,8 +249,9 @@ sub process {
             sub {
                 my $entry = shift;
                 my $id    = shift;
-                if ( $entry->{ipAddr} eq $ip ) {
-                    push @{ $byUser->{ $entry->{uid} } },
+                next if($entry->{_httpSessionType});
+                if ( $entry->{$ipField} eq $ip ) {
+                    push @{ $byUser->{ $entry->{$whatToTrace} } },
                       { id => $id, _utime => $entry->{_utime} };
                 }
                 undef;
@@ -251,8 +278,9 @@ sub process {
             sub {
                 my $entry = shift;
                 my $id    = shift;
-                if ( $entry->{uid} eq $uid ) {
-                    push @{ $byIp->{ $entry->{ipAddr} } },
+                next if($entry->{_httpSessionType});
+                if ( $entry->{$whatToTrace} eq $uid ) {
+                    push @{ $byIp->{ $entry->{$ipField} } },
                       { id => $id, _utime => $entry->{_utime} };
                 }
                 undef;
@@ -279,8 +307,9 @@ sub process {
             $globalStorageOptions,
             sub {
                 my $entry = shift;
-                $entry->{uid} =~ /^$letter/ or return undef;
-                $byUid->{ $entry->{uid} }++;
+                next if($entry->{_httpSessionType});
+                $entry->{$whatToTrace} =~ /^$letter/ or return undef;
+                $byUid->{ $entry->{$whatToTrace} }++;
             },
         );
         foreach my $uid ( sort keys %$byUid ) {
@@ -306,7 +335,8 @@ sub process {
             $globalStorageOptions,
             sub {
                 my $entry = shift;
-                $entry->{ipAddr} =~ /^$repartial(\d+)/ or return undef;
+                next if($entry->{_httpSessionType});
+                $entry->{$ipField} =~ /^$repartial(\d+)/ or return undef;
                 $byIp->{$1}++;
                 $count++;
                 undef;
@@ -345,7 +375,8 @@ sub process {
             $globalStorageOptions,
             sub {
                 my $entry = shift;
-                $entry->{uid} =~ /^(\w)/ or return undef;
+                next if($entry->{_httpSessionType});
+                $entry->{$whatToTrace} =~ /^(\w)/ or return undef;
                 $byUid->{$1}++;
                 $count++;
                 undef;
@@ -362,6 +393,10 @@ sub process {
     }
 }
 
+## @fn protected string htmlquote(string s)
+# Change <, > and & to HTML encoded values in the string
+# @param $s HTML string
+# @return HTML string
 sub htmlquote {
     my $s = shift;
     $s =~ s/</&lt;/g;
@@ -370,7 +405,8 @@ sub htmlquote {
     return $s;
 }
 
-# HTML headers
+## @method protected void start()
+# Display HTTP and HTML headers.
 sub start {
     my $self = shift;
     print $self->header( -type => 'text/html; charset=utf8', );
@@ -428,14 +464,20 @@ sub start {
     );
 }
 
-# Ajax node use by JQuery.simple.tree
+## @method protected void ajaxnode(string id, string text, string param)
+# Display tree node with Ajax functions inside for opening the node.
+# @param $id HTML id of the element.
+# @param $text text to display
+# @param $param Parameters for the Ajax query
 sub ajaxNode {
     my ( $self, $id, $text, $param ) = @_;
     print
 "<li id=\"$id\"><span>$text</span>\n<ul class=\"ajax\"><li id=\"sub_$id\">{url:$ENV{SCRIPT_NAME}?$param}</li></ul></li>\n";
 }
 
-# Design of the main window
+## @method protected void window(string root)
+# Design the main window
+# @param $root Text to display in the root node of the tree
 sub window {
     my $self = shift;
     my $root = shift;
@@ -457,7 +499,8 @@ sub window {
       . '</span><ul>';
 }
 
-# End of HTML
+## @method protected void end()
+# Display the end of HTML page.
 sub end {
     my $self = shift;
     print
@@ -467,6 +510,8 @@ sub end {
 
 1;
 
+## @method protected css()
+# Display the main CSS file (called by http://manager.example.com/sessions.pl/css)
 sub css {
     my $self = shift;
     print <<"EOF";
@@ -652,6 +697,8 @@ body
 EOF
 }
 
+## @method protected js()
+# Display the main javascript file (called by http://manager.example.com/sessions.pl/js)
 sub js {
     my $self = shift;
     print <<"EOF";
@@ -1108,8 +1155,8 @@ sub js {
 }
 EOF
 }
+1;
 __END__
-# Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME
 
@@ -1139,6 +1186,8 @@ sessions
         https         => 1,
         jqueryUri     => '/js/jquery/jquery.js',
         imagePath     => '/js/jquery.simple.tree/',
+        # Force the use of X-FORWARDED-FOR for IP
+        useXForwardedForIP => 1,
         # Optionnal
         protection    => 'rule: $uid eq "admin"',
         # Or to use rules from manager

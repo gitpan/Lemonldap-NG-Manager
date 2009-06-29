@@ -1,3 +1,8 @@
+## @file
+# Lemonldap::NG Management interface
+
+## @class
+# Lemonldap::NG Management interface
 package Lemonldap::NG::Manager;
 
 use strict;
@@ -5,20 +10,23 @@ use strict;
 use XML::Simple;
 
 use Lemonldap::NG::Common::CGI;
-use Lemonldap::NG::Common::Conf;
-use Lemonldap::NG::Manager::_HTML;
-require Lemonldap::NG::Manager::_Response;
-require Lemonldap::NG::Manager::_i18n;
-require Lemonldap::NG::Manager::Help;
-use Lemonldap::NG::Common::Conf::Constants;
+use Lemonldap::NG::Common::Conf; #link protected conf Configuration
+use Lemonldap::NG::Manager::_HTML; #inherits
+require Lemonldap::NG::Manager::_Response; #inherits
+require Lemonldap::NG::Manager::_i18n; #inherits
+require Lemonldap::NG::Manager::Help; #inherits
+use Lemonldap::NG::Common::Conf::Constants; #inherits
+use Lemonldap::NG::Common::Safelib;           #link protected safe Safe object
 use LWP::UserAgent;
 use Safe;
 use MIME::Base64;
 
+#inherits Lemonldap::NG::Handler::CGI
+
 use base qw(Lemonldap::NG::Common::CGI);
 our @ISA;
 
-our $VERSION = '0.87';
+our $VERSION = '0.89';
 
 # Secure jail
 our $safe;
@@ -36,16 +44,23 @@ sub safe {
         s/^.*:://;
         next if ( $self->can($_) );
         eval "sub $_ {1}";
-        print STDERR $@ if ($@);
+        $self->lmLog( $@, 'error' ) if ($@);
     }
+    $safe->share_from( 'main', ['%ENV'] );
+    $safe->share_from( 'Lemonldap::NG::Common::Safelib',
+        $Lemonldap::NG::Common::Safelib::functions );
     $safe->share( '&encode_base64', @t );
     return $safe;
 }
 
+## @cmethod Lemonldap::NG::Manager new(hashref args)
+# Constructor.
+# @param $args hash reference containing parameters
 sub new {
     my ( $class, $args ) = @_;
     my $self;
     if ( $args->{protection} ) {
+        require Lemonldap::NG::Handler::CGI;
         unshift @ISA, "Lemonldap::NG::Handler::CGI";
         $self = $class->SUPER::new($args);
     }
@@ -53,20 +68,21 @@ sub new {
         $self = $class->SUPER::new();
     }
     unless ($args) {
-        print STDERR "parameters are required, I can't start so\n";
-        return 0;
+        $self->abort( "Unable to start",
+            "parameters are required, I can't start so" );
     }
     %$self = ( %$self, %$args );
     foreach (qw(dhtmlXTreeImageLocation)) {
         unless ( $self->{$_} ) {
-            print STDERR qq/The "$_" parameter is required\n/;
-            return 0;
+            $self->abort( "Unable to start",
+                qq/The "$_" parameter is required/ );
         }
     }
     $self->{jsFile} ||= $self->_dir . "lemonldap-ng-manager.js";
     unless ( -r $self->{jsFile} ) {
-        print STDERR
-qq#Unable to read $self->{jsFile}. You have to set "jsFile" parameter to /path/to/lemonldap-ng-manager.js\n#;
+        $self->abort(
+qq#Unable to read $self->{jsFile}. You have to set "jsFile" parameter to /path/to/lemonldap-ng-manager.js#
+        );
     }
     $self->{pageTitle} ||= "LemonLDAP::NG Administration";
     $self->{textareaW} ||= 50;
@@ -92,12 +108,14 @@ qq#Unable to read $self->{jsFile}. You have to set "jsFile" parameter to /path/t
     exit;
 }
 
-# Subroutines to make all the work
+## @method void doall()
+# Launch :
+# - Lemonldap::NG::Manager::_HTML::start_html()
+# - Lemonldap::NG::Manager::_HTML::main()
+# - CGI::end_html()
 sub doall {
     my $self = shift;
 
-    # When using header_public here, Firefox does not load configuration
-    # sometimes. Where is the bug ?
     print $self->header( -type => 'text/html; charset=utf8' );
 
     # Test if we have to use specific CSS
@@ -114,13 +132,18 @@ sub doall {
     print $self->end_html;
 }
 
-# CSS and Javascript export
+## @method void print_css()
+# Print HTTP headers using header_public() and call
+# Lemonldap::NG::Manager::_HTML::css()
 sub print_css {
     my $self = shift;
     print $self->header_public( $ENV{SCRIPT_FILENAME}, -type => 'text/css' );
     $self->css;
 }
 
+## @method void print_libjs()
+# Print HTTP headers using header_public() and display $self->{jsFile}
+# javascript file.
 sub print_libjs {
     my $self = shift;
     print $self->header_public( $self->{jsFile},
@@ -132,6 +155,9 @@ sub print_libjs {
     close F;
 }
 
+## @method void print_lmjs()
+# Print HTTP headers using header_public() and call
+# Lemonldap::NG::Manager::_HTML::javascript()
 sub print_lmjs {
     my $self = shift;
     print $self->header_public( $ENV{SCRIPT_FILENAME},
@@ -139,8 +165,9 @@ sub print_lmjs {
     $self->javascript;
 }
 
-# HELP subroutines
-
+## @method void print_help()
+# AJAX method that display help chapter.
+# Print HTTP headers using header_public() and display asked help chapter.
 sub print_help {
     my $self = shift;
     print $self->header_public( $ENV{SCRIPT_FILENAME},
@@ -152,8 +179,8 @@ sub print_help {
     eval { no strict "refs"; &{"help_$chap"} };
 }
 
-# Delete subroutine
-
+## @method void print_delete()
+# Print HTTP headers and call Lemonldap::NG::Common::Conf::delete()
 sub print_delete {
     my $self = shift;
     print $self->header( -type => 'text/html; charset=utf8' );
@@ -169,17 +196,21 @@ sub print_delete {
     exit;
 }
 
-# Configuration download subroutines
+## @method void print_conf()
+# Print HTTP headers using header_public() and call printXmlConf()
 sub print_conf {
     my $self = shift;
     print $self->header(
         -type            => "text/xml; charset=utf8",
         '-Cache-Control' => 'private'
     );
-    $self->printXmlConf( { cfgNum => $self->param('cfgNum'), } );
+    $self->printXmlConf( { cfgNum => $self->param('cfgNum'), noCache => 1 } );
     exit;
 }
 
+## @fn protected hashref default()
+# Build a minimum configuration if no configuration is available.
+# @return Lemonldap::NG configuration hash reference.
 sub default {
     return {
         cfgNum   => 0,
@@ -187,6 +218,11 @@ sub default {
     };
 }
 
+## @method protected string printXmlConf(array p)
+# Call buildTree() then XML::Simple::XMLout to build the XML datas used by
+# javascript library to display the tree.
+# @param @p parameters given to buildTree()
+# @return XML string
 sub printXmlConf {
     my $self = shift;
     print XMLout(
@@ -201,10 +237,15 @@ sub printXmlConf {
     );
 }
 
+## @method protected hashRef buildTree(array p)
+# Transform Lemonldap::NG configuration into a tree that javascript library can
+# understand.
+# @param @p parameters given to Lemonldap::NG::Common::Conf::getConf()
+# @return hash reference to the javascript tree structure
 sub buildTree {
     my $self   = shift;
     my $config = $self->config->getConf(@_);
-    $config = $self->default unless ($config);
+    $config = $self->default unless ( $config and $config->{cfgNum} );
     my $indice = 1;
     my $tree   = {
         id   => '0',
@@ -389,6 +430,11 @@ sub buildTree {
     return $tree;
 }
 
+## @method protected hashref xmlField(string type, string value, string text)
+# Little method used by buildTree to build javascript tree nodes.
+# @param $type type of field (key and value can be both modified or not)
+# @param $value value of the node
+# @param $text text to display for the node
 sub xmlField {
     my ( $self, $type, $value, $text ) = @_;
     $value =~ s/"/\&#34;/g;
@@ -405,6 +451,10 @@ sub xmlField {
 }
 
 # Upload subroutines
+## @method void print_upload(string datas)
+# Print HTTP headers, and call upload() to store the new configuration.
+# Then call Lemonldap::NG::Manager::_Response::send() to display the response
+# @param $datas new configuration in javascript XML format
 sub print_upload {
     my $self  = shift;
     my $datas = shift;
@@ -427,15 +477,24 @@ sub print_upload {
     $r->send;
 }
 
+## @method protected int upload(string tree, Lemonldap::NG::Manager::_Response response)
+# Transform $tree in a hash reference using tree2conf(), verify it using
+# checkConf() then save configuration using saveConf()
+# @param $tree configuration in XML format
+# @param $response response object
+# @return error code
 sub upload {
-    my $self     = shift;
-    my $tree     = shift;
-    my $response = shift;
+    my ( $self, $tree, $response ) = @_;
     my $config   = $self->tree2conf( $tree, $response );
     return SYNTAX_ERROR unless ( $self->checkConf( $config, $response ) );
     return $self->config->saveConf($config);
 }
 
+## @method protected hashref tree2conf(string tree, Lemonldap::NG::Manager::_Response response)
+# Transform $tree into a Lemonldap::NG configuration hash reference.
+# @param $tree configuration in XML format
+# @param $response response object
+# @return $tree transformed in hash reference
 sub tree2conf {
     my ( $self, $tree, $response ) = @_;
     $tree = XMLin($$tree);
@@ -516,7 +575,10 @@ sub tree2conf {
     return $config;
 }
 
-# Configuration check : before saving, we try to find faults in configuration
+## @method protected boolean checkConf(hashref config,Lemonldap::NG::Manager::_Response response)
+# Try to find faults in new uploaded configuration.
+# @param $config Lemonldap::NG configuration hash reference
+# @param $response response object
 sub checkConf {
     my $self     = shift;
     my $config   = shift;
@@ -715,6 +777,9 @@ sub checkConf {
 # Apply subroutines
 # TODO: Credentials in applyConfFile
 
+## @method void print_apply()
+# Call all Lemonldap::NG handlers declared in $self->{applyConfFile} file to
+# ask them to reload Lemonldap::NG configuration.
 sub print_apply {
     my $self = shift;
     print $self->header( -type => "text/html; charset=utf8" );
@@ -763,21 +828,25 @@ sub print_apply {
     print "</ul><p>" . &txt_changesAppliedLater . "</p>";
 }
 
-# Internal subroutines
+## @fn private string _dir()
+# Return the path to the manager script
 sub _dir {
     my $d = $ENV{SCRIPT_FILENAME};
     $d =~ s/[^\/]*$//;
     return $d;
 }
 
+## @method Lemonldap::NG::Common::Conf config()
+# Return Lemonldap::NG::Common::Conf object if exists else, build it.
+# @return Lemonldap::NG::Common::Conf object
 sub config {
     my $self = shift;
     return $self->{_config} if $self->{_config};
     $self->{_config} =
       Lemonldap::NG::Common::Conf->new( $self->{configStorage} );
     unless ( $self->{_config} ) {
-        $self->abort( "Configuration not loaded\n",
-            $Lemonldap::NG::Common::Conf::msg );
+        $self->abort( "Unable to start",
+            "Configuration not loaded\n" . $Lemonldap::NG::Common::Conf::msg );
     }
     return $self->{_config};
 }

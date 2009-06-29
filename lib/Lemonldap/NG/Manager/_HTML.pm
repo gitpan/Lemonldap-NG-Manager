@@ -1,3 +1,8 @@
+## @file
+# Display HTML parts of Lemonldap::NG::Manager
+
+## @class
+# Display HTML parts of Lemonldap::NG::Manager
 package Lemonldap::NG::Manager::_HTML;
 
 # This package contains all subroutines that are provided after a
@@ -5,10 +10,10 @@ package Lemonldap::NG::Manager::_HTML;
 # comes for the first time.
 
 use AutoLoader qw(AUTOLOAD);
-require Lemonldap::NG::Manager::_i18n;
-use Lemonldap::NG::Common::Conf::Constants;
+require Lemonldap::NG::Manager::_i18n; #inherits
+use Lemonldap::NG::Common::Conf::Constants; #inherits
 
-our $VERSION = '0.31';
+our $VERSION = '0.32';
 
 # TODO: Delete buttons in headers and rules if 'read-only'
 
@@ -18,6 +23,9 @@ __END__
 
 =pod
 =cut
+
+## @method void css()
+# Display Lemonldap::NG::Manager CSS file.
 sub css {
     print <<EOT;
 /* xSplitter Styles */
@@ -72,6 +80,8 @@ h3, p { padding: 0 0 0 6px; border: none; }
 EOT
 }
 
+## @method void javascript()
+# Display Lemonldap::NG::Manager javascript file.
 sub javascript {
     my $self = shift;
     Lemonldap::NG::Manager::_i18n::import( $self->{language} || $ENV{HTTP_ACCEPT_LANGUAGE} )
@@ -408,6 +418,8 @@ function ec(s){
 #;
 }
 
+## @method void start_html()
+# Overload CGI::start_html to add HTML links to javascript and css files.
 sub start_html {
     my $self = shift;
     my %args = @_;
@@ -419,6 +431,8 @@ sub start_html {
     $self->CGI::start_html(%args);
 }
 
+## @method void main()
+# Display main HTML code.
 sub main {
     my $self = shift;
     Lemonldap::NG::Manager::_i18n::import( $self->{language} || $ENV{HTTP_ACCEPT_LANGUAGE} )

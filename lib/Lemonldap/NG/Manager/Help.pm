@@ -1,8 +1,16 @@
+## @file
+# Help messages used by the manager.
+
+## @class
+# Import help messages subroutines in Lemonldap::NG::Manager in the wanted language.
 package Lemonldap::NG::Manager::Help;
 
 use AutoLoader qw(AUTOLOAD);
-our $VERSION = '0.36';
+our $VERSION = '0.4';
 
+## @fn void import(string lang)
+# Import help messages subroutines in Lemonldap::NG::Manager in the wanted language.
+# @param $lang Language string of "Accept-Language" HTTP header value
 sub import {
     my ($caller_package) = caller;
     my $lang = shift;
@@ -52,7 +60,9 @@ inherits from Lemonldap::NG::Portal::SharedConf.</dd>
 <dt> Secured cookie (SSL) </dt>
 <dd> An authenticated user is known by his cookie. If all (virtual) hosts use
 HTTPS, set this value to 1 so the cookie will be protected and will not be
-transmitted unless https is used.</dd>
+transmitted unless https is used. You can also set it to generate 2 cookies,
+1 secure and the other not. Handlers detects if they are in https mode or not
+and will choose the good cookie.</dd>
 </dl>
 EOT
 }
@@ -87,7 +97,11 @@ utilisant Lemonldap::NG::Portal::SharedConf.</dd>
 tous les h&ocirc;tes virtuels de votre domaine son prot&eacute;g&eacute;s par
 SSL, mettez cette option &agrave; 1, ainsi le cookie ne sera
 pr&eacute;sent&eacute; par le navigateur qu'aux sites prot&eacute;g&eacute;s,
-ce qui &eacute;vite un vol de session.</dd>
+ce qui &eacute;vite un vol de session. Vous pouvez également mettre cette
+valeur &agrave; 2 pour g&eacute;n&eacute;rer 2 cookies, l'un
+s&eacute;curis&eacute; et l'autre non. Les agents (handlers) d&eacute;tectent
+automatiquement s'il sont en mode https ou non et choisissent le bon cookie.
+</dd>
 </dl>
 EOT
 }
@@ -444,7 +458,7 @@ EOT
 sub help_timeout_en {
     print <<EOT;
 <h3>Sessions timeout</h3>
-<p> Set here the sessions timeout in minutes. It will be used by the
+<p> Set here the sessions timeout in seconds. It will be used by the
 purgeCentralStorage script given in the source tree.
 EOT
 }
@@ -452,7 +466,7 @@ EOT
 sub help_timeout_fr {
     print <<EOT;
 <h3>Dur&eacute;e de vie des sessions</h3>
-<p> Indiquez ici la dur&eacute;e de vie des sessions en minutes. Elle est
+<p> Indiquez ici la dur&eacute;e de vie des sessions en secondes. Elle est
 utilis&eacute;e par le script purgeCentralStorage fourni dans les sources.
 EOT
 }

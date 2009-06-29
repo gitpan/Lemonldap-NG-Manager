@@ -10,11 +10,15 @@ example/images/expandable.gif
 example/images/folder_add.png
 example/images/folder_delete.png
 example/images/folder_edit.png
+example/images/hframe.png
 example/images/leaf-last.gif
 example/images/leaf.gif
 example/images/line_bg.gif
 example/images/line_bg_over.gif
 example/images/line_bg_over_last.gif
+example/images/logo_lemonldap-ng.png
+example/images/manager.css
+example/images/manager.js
 example/images/minus.gif
 example/images/page_add.png
 example/images/page_delete.png
@@ -23,7 +27,10 @@ example/images/plus.gif
 example/images/root.gif
 example/images/spacer.gif
 example/images/spinner.gif
+example/images/tree.js
 example/images/tree_line.gif
+example/images/vframe.png
+example/images/xlib.js
 example/imgs/_customers.gif
 example/imgs/blank.gif
 example/imgs/book.gif
@@ -75,7 +82,6 @@ example/mrtg/lmng-mrtg
 example/mrtg/mrtg.cfg.example
 example/scripts/lmConfigEditor
 example/sessions.pl
-example/soapserver.pl
 example/theme/default.css
 example/theme/hatch.gif
 example/theme/logo_lemonldap-ng.png
@@ -93,6 +99,5 @@ META.yml			Module meta-data (added by MakeMaker)
 README
 t/10-Manager.t
 t/20-Manager-i18n.t
-t/50-Manager-SOAPServer.t
 t/99-pod.t
 TODO
