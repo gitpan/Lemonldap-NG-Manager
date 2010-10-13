@@ -1,29 +1,11 @@
 #!/usr/bin/perl
 
+use strict;
 use Lemonldap::NG::Manager;
+use HTML::Template;
 
-my $h = new Lemonldap::NG::Manager(
+my $manager = new Lemonldap::NG::Manager(
     {
-        # REQUIRED PARAMETERS
-        dhtmlXTreeImageLocation => "/imgs/",
-        applyConfFile           => '__APPLYCONFFILE__',
-        cssFile => 'theme/default.css',
-        textareaW               => 50,
-        textareaH               => 2,
-        inputSize               => 30,
-
-        # OPTIONAL PARAMETERS
-
-        ## PROTECTION, choose one of :
-        # * protection by manager
-        # protection  => 'manager',
-        # * specify yourself the rule to apply (same as in the manager)
-        # protection  => 'rule: $uid=admin',
-        # * all authenticate users are granted
-        # protection  => 'authenticate',
-        # * nothing : not protected
-
-        #jsFile => /path/to/lemonldap-ng-manager.js,
 
         # ACCESS TO CONFIGURATION
 
@@ -40,11 +22,26 @@ my $h = new Lemonldap::NG::Manager(
         #      directory => '/usr/local/lemonldap-ng/conf/'
         #},
 
-        # CUSTOM FUNCTION
-        # If you want to create customFunctions in rules, declare them here:
-        #customFunctions    => 'function1 function2',
-        #customFunctions    => 'Package::func1 Package::func2',
     }
-) or die "Unable to start";
+) or Lemonldap::NG::Common::CGI->abort('Unable to start manager');
 
-$h->doall();
+our $skin     = $manager->{managerSkin};
+our $skin_dir = 'skins';
+our $main_dir = $ENV{DOCUMENT_ROOT};
+
+my $template = HTML::Template->new(
+    filename          => "$main_dir/$skin_dir/$skin/manager.tpl",
+    die_on_bad_params => 0,
+    cache             => 0,
+    filter            => sub { $manager->translate_template(@_) },
+);
+$template->param( SCRIPT_NAME    => $ENV{SCRIPT_NAME} );
+$template->param( MENU           => $manager->menu() );
+$template->param( DIR            => "$skin_dir/$skin" );
+$template->param( CFGNUM         => $manager->{cfgNum} );
+$template->param( TREE_AUTOCLOSE => $manager->{managerTreeAutoClose} );
+$template->param( TREE_JQUERYCSS => $manager->{managerTreeJqueryCss} );
+$template->param( CSS            => $manager->{managerCss} );
+print $manager->header('text/html; charset=utf-8');
+print $template->output;
+

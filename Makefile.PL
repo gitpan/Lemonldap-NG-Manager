@@ -5,12 +5,21 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME         => 'Lemonldap::NG::Manager',
     VERSION_FROM => 'lib/Lemonldap/NG/Manager.pm',    # finds $VERSION
+    LICENSE      => 'perl',
+    BUILD_REQUIRES => {
+        'Convert::PEM'         => 0,
+        'Crypt::OpenSSL::RSA'  => 0,
+        'IO::String'           => 0,
+    },
     PREREQ_PM    => {
         'CGI'                    => 3.08,
-        'IO::String'             => 0,
-        'Lemonldap::NG::Common'  => 0.93,
-        'Lemonldap::NG::Handler' => 0.91,
+        'HTML::Template'         => 0,
+        'JSON'                   => 0,
+        'Lemonldap::NG::Common'  => 0.96,
+        'Lemonldap::NG::Handler' => 0.93,
         'LWP::UserAgent'         => 0,
+        'XML::LibXML'            => 0,
+        'XML::LibXSLT'           => 0,
         'XML::Simple'            => 0,
     },    # e.g., Module::Name => 1.1
     (
@@ -20,6 +29,8 @@ WriteMakefile(
             ABSTRACT_FROM =>
               'lib/Lemonldap/NG/Manager.pm',    # retrieve abstract from module
             AUTHOR => 'Xavier Guimard <x.guimard@free.fr>'
+              . ', Clément Oudot <clement@oodo.net>'
+              . ', Thomas Chemineau <thomas.chemineau@gmail.com>'
           )
         : ()
     ),
