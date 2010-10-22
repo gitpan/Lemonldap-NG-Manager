@@ -9,7 +9,7 @@ package Lemonldap::NG::Manager::_i18n;
 
 use strict;
 use AutoLoader qw(AUTOLOAD);
-our $VERSION = '0.99';
+our $VERSION = '0.99.1';
 
 ## @method string translate(string text,string lang)
 # Returns $text translated in $lang.
@@ -290,6 +290,7 @@ sub en {
         userDB                       => 'Users module',
         userControl                  => 'Username control',
         userPivot                    => 'Login field name in user table',
+        useRedirectOnError           => 'Redirect on handler error',
         useRedirectOnForbidden       => 'Redirect on forbidden',
         useXForwardedForIP           => "Use X-Forwarded-For header address",
         variables                    => "Variables",
@@ -671,6 +672,7 @@ sub fr {
         userDB            => "Module d'utilisateurs",
         userControl       => "Contrôle du nom d'utilisateur",
         userPivot         => 'Champ identifiant dans la table des utilisateurs',
+        useRedirectOnError     => 'Redirection pour les erreurs d\'agent',
         useRedirectOnForbidden => 'Redirection pour les accès interdits',
         useXForwardedForIP =>
           "Utiliser l'adresse IP de l'en-tête X-Forwarded-For",

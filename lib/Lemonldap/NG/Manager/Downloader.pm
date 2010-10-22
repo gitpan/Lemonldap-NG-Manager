@@ -13,8 +13,6 @@ use URI::Escape;
 require Lemonldap::NG::Manager::_Struct;    #inherits
 require Lemonldap::NG::Manager::_i18n;      #inherits
 
-our $VERSION = '0.99';
-
 ## @method string node(string node)
 # Build the part of the tree that does not depends of the the configuration.
 # Call corresp(), ajaxNode(), confNode() or itself with li() and span().

@@ -24,7 +24,7 @@ use utf8;
 our $whatToTrace;
 *whatToTrace = \$Lemonldap::NG::Handler::_CGI::whatToTrace;
 
-our $VERSION = '0.99';
+our $VERSION = '0.99.1';
 
 our @ISA = qw(
   Lemonldap::NG::Handler::CGI
@@ -66,7 +66,7 @@ sub new {
     # Now try to load Apache::Session module
     unless ( $globalStorage->can('populate') ) {
         eval "require $globalStorage";
-    $class->abort( "Unable to load $globalStorage", $@ ) if ($@);
+        $class->abort( "Unable to load $globalStorage", $@ ) if ($@);
     }
     %{ $self->{globalStorageOptions} } = %$globalStorageOptions;
     $self->{globalStorageOptions}->{backend} = $globalStorage;

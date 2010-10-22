@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '0.99';
+our $VERSION = '0.99.1';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -32,7 +32,7 @@ sub cstruct {
                     _nodes => [
                         qw(rules:rules:rules headers post:post:post vhostOptions)
                     ],
-                    rules  => {
+                    rules => {
                         _nodes => ["hash:/locationRules/$k2:rules:rules"],
                         _js    => 'rulesRoot'
                     },
@@ -467,7 +467,7 @@ sub struct {
 
                 # OpenID
                 openIdParams => {
-                    _nodes           => [qw(openIdAuthnLevel openIdSecret openIdIDPList)],
+                    _nodes => [qw(openIdAuthnLevel openIdSecret openIdIDPList)],
                     openIdAuthnLevel => 'int:/openIdAuthnLevel',
                     openIdSecret     => 'text:/openIdSecret',
                     openIdIDPList =>
@@ -602,7 +602,7 @@ sub struct {
                         openIdAttr         => 'text:openIdAttr',
                         openIdSPList =>
                           'text:/openIdSPList:issuerdbopenid:openididplist',
-                        openIdSreg         => {
+                        openIdSreg => {
                             _nodes => [
                                 qw(openIdSreg_fullname openIdSreg_nickname openIdSreg_language openIdSreg_postcode openIdSreg_timezone openIdSreg_country openIdSreg_gender openIdSreg_email openIdSreg_dob)
                             ],
@@ -730,10 +730,13 @@ sub struct {
                 },
 
                 redirection => {
-                    _nodes => [qw(https port useRedirectOnForbidden)],
+                    _nodes => [
+                        qw(https port useRedirectOnForbidden useRedirectOnError)
+                    ],
                     https  => 'bool:/https',
                     port   => 'int:/port',
                     useRedirectOnForbidden => 'bool:/useRedirectOnForbidden',
+                    useRedirectOnError     => 'bool:/useRedirectOnError',
                 },
 
                 specialHandlers => {
@@ -1390,6 +1393,7 @@ sub testStruct {
             test    => qr/^[a-zA-Z][\w\:]*$/,
             msgFail => 'Bad module name',
         },
+        useRedirectOnError     => $boolean,
         useRedirectOnForbidden => $boolean,
         useXForwardedForIP     => $boolean,
         variables              => $testNotDefined,
@@ -1401,7 +1405,7 @@ sub testStruct {
                 keyMsgFail => 'Bad option name',
             },
         },
-        whatToTrace            => $lmAttrOrMacro,
+        whatToTrace => $lmAttrOrMacro,
 
         ########
         # SAML #
@@ -1696,6 +1700,7 @@ sub defaultConf {
         userControl         => '^[\w\.\-@]+$',
         userDB              => 'LDAP',
         passwordDB          => 'LDAP',
+        useRedirectOnError  => '1',
         useRedirectOnForbidden => '0',
         useXForwardedForIP     => '0',
         vhostPort              => '-1',
