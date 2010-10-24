@@ -9,7 +9,7 @@ package Lemonldap::NG::Manager::_i18n;
 
 use strict;
 use AutoLoader qw(AUTOLOAD);
-our $VERSION = '0.991';
+our $VERSION = '0.992';
 
 ## @method string translate(string text,string lang)
 # Returns $text translated in $lang.
@@ -220,6 +220,7 @@ sub en {
         passwordManagement           => 'Password management',
         port                         => 'Port',
         portal                       => 'URL',
+        portalAntiFrame              => 'Anti frame protection',
         portalAutocomplete           => 'Auto complete',
         portalCustomization          => 'Customization',
         portalDisplayAppslist        => 'Applications list',
@@ -601,6 +602,7 @@ sub fr {
         passwordManagement           => 'Gestion des mots de passe',
         port                         => 'Port',
         portal                       => 'URL',
+        portalAntiFrame              => 'Protection anti frame',
         portalAutocomplete           => 'Auto complétion',
         portalCustomization          => 'Personnalisation',
         portalDisplayAppslist        => 'Liste des applications',

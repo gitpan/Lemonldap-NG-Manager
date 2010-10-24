@@ -6,7 +6,7 @@
 package Lemonldap::NG::Manager::Help;
 
 use AutoLoader qw(AUTOLOAD);
-our $VERSION = '0.991';
+our $VERSION = '0.992';
 
 ## @fn void import(string lang)
 # Import help messages subroutines in Lemonldap::NG::Manager in the wanted language.
