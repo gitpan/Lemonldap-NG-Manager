@@ -7,11 +7,10 @@ package Lemonldap::NG::Manager;
 
 use strict;
 use Lemonldap::NG::Handler::CGI qw(:globalStorage :locationRules);    #inherits
-use Lemonldap::NG::Manager::Help;                                     #inherits
 use Lemonldap::NG::Common::Conf;              #link protected conf Configuration
 use Lemonldap::NG::Common::Conf::Constants;   #inherits
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 our @ISA     = qw(
   Lemonldap::NG::Handler::CGI
   Lemonldap::NG::Manager::Downloader
@@ -46,25 +45,15 @@ sub new {
     # Default values
     $self->{managerSkin} = "default"       unless defined $self->{managerSkin};
     $self->{managerCss}  = "accordion.css" unless defined $self->{managerCss};
+    $self->{managerCssTheme} = "ui-lightness"
+      unless defined $self->{managerCssTheme};
     $self->{managerTreeAutoClose} = "true"
       unless defined $self->{managerTreeAutoClose};
     $self->{managerTreeJqueryCss} = "true"
       unless defined $self->{managerTreeJqueryCss};
 
-    # Display help if ?help=
-    if ( $self->param('help') ) {
-
-        print $self->header_public( $ENV{SCRIPT_FILENAME},
-            -type => 'text/html; charset=utf8' );
-        &Lemonldap::NG::Manager::Help::import( $self->{language} );
-        my $chap = $self->param('help');
-        $self->lmLog( "Manager request: Help chapter $chap", 'debug' );
-        eval { no strict "refs"; &{"help_$chap"} };
-        $self->quit();
-    }
-
     # Save conf if ?data=
-    elsif ( my $rdata = $self->rparam('data') ) {
+    if ( my $rdata = $self->rparam('data') ) {
 
         $self->lmLog( "Manager request: Save data $rdata", 'debug' );
         require Lemonldap::NG::Manager::Uploader;    #inherits
@@ -170,7 +159,7 @@ system.
 =head1 SEE ALSO
 
 L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>, L<CGI>,
-http://wiki.lemonldap.objectweb.org/xwiki/bin/view/NG/Presentation
+L<http://lemonldap-ng.org/>
 
 =head1 AUTHOR
 
@@ -179,7 +168,7 @@ Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 =head1 BUG REPORT
 
 Use OW2 system to report bug or ask for features:
-L<http://forge.objectweb.org/tracker/?group_id=274>
+L<http://jira.ow2.org>
 
 =head1 DOWNLOAD
 
@@ -191,7 +180,7 @@ L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 Copyright (C) 2006, 2009, 2010 by Xavier Guimard
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.8 or,
+it under the same terms as Perl itself, either Perl version 5.10.0 or,
 at your option, any later version of Perl 5 you may have available.
 
 =cut

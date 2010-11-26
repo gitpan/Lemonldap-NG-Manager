@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -34,15 +34,17 @@ sub cstruct {
                     ],
                     rules => {
                         _nodes => ["hash:/locationRules/$k2:rules:rules"],
-                        _js    => 'rulesRoot'
+                        _js    => 'rulesRoot',
+                        _help  => 'rules',
                     },
                     headers => {
                         _nodes => ["hash:/exportedHeaders/$k2"],
-                        _js    => 'hashRoot'
+                        _js    => 'hashRoot',
+                        _help  => 'headers',
                     },
                     post => {
                         _nodes => ["post:/post/$k2:post:post"],
-                        _js    => 'postRoot'
+                        _js    => 'postRoot',
                     },
                     vhostOptions => {
                         _nodes     => [qw(vhostPort vhostHttps)],
@@ -251,20 +253,24 @@ sub struct {
 
                 portalMenu => {
                     _nodes        => [qw(portalModules applicationList)],
+                    _help         => 'menu',
                     portalModules => {
                         _nodes => [
                             qw(portalDisplayLogout portalDisplayChangePassword portalDisplayAppslist)
                         ],
-                        portalDisplayLogout => 'text:/portalDisplayLogout',
+                        portalDisplayLogout =>
+                          'text:/portalDisplayLogout:menu:boolOrPerlExpr',
                         portalDisplayChangePassword =>
-                          'text:/portalDisplayChangePassword',
-                        portalDisplayAppslist => 'text:/portalDisplayAppslist',
+'text:/portalDisplayChangePassword:menu:boolOrPerlExpr',
+                        portalDisplayAppslist =>
+                          'text:/portalDisplayAppslist:menu:boolOrPerlExpr',
                     },
                     applicationList => {
                         _nodes => [
-'applicationlist:/applicationList:default:applicationListCategory'
+'applicationlist:/applicationList:menuCatAndApp:applicationListCategory'
                         ],
                         _js => 'applicationListCategoryRoot',
+                        _help => 'menuCatAndApp',
                     },
                 },
 
@@ -272,8 +278,9 @@ sub struct {
                     _nodes => [
                         qw(portalSkin portalDisplayResetPassword portalAutocomplete portalRequireOldPassword portalUserAttr portalOpenLinkInNewWindow portalAntiFrame)
                     ],
+                    _help => 'portalcustom',
 
-                    portalSkin => 'text:/portalSkin:portalParams:skinSelect',
+                    portalSkin => 'text:/portalSkin:portalcustom:skinSelect',
                     portalDisplayResetPassword =>
                       'bool:/portalDisplayResetPassword',
                     portalAutocomplete => 'bool:/portalAutocomplete',
@@ -356,10 +363,8 @@ sub struct {
                     _nodes => [
                         qw(ldapAuthnLevel n:ldapConnection n:ldapFilters n:ldapGroups n:ldapPassword)
                     ],
-                    _help => 'ldap',
-
-                    ldapAuthnLevel => 'int:/ldapAuthnLevel',
-
+                    _help          => 'authLDAP',
+                    ldapAuthnLevel => 'int:/ldapAuthnLevel:authLDAPLevel:int',
                     ldapConnection => {
                         _nodes => [
                             qw(ldapServer ldapPort ldapBase managerDn managerPassword ldapTimeout ldapVersion ldapRaw)
@@ -372,6 +377,7 @@ sub struct {
                         ldapTimeout     => 'int:/ldapTimeout',
                         ldapVersion     => 'int:/ldapVersion',
                         ldapRaw         => 'text:/ldapRaw',
+                        _help           => 'authLDAPConnection',
                     },
 
                     ldapFilters => {
@@ -380,6 +386,7 @@ sub struct {
                         LDAPFilter     => 'text:/LDAPFilter',
                         AuthLDAPFilter => 'text:/AuthLDAPFilter',
                         mailLDAPFilter => 'text:/mailLDAPFilter',
+                        _help          => 'authLDAPFilters',
                     },
 
                     ldapGroups => {
@@ -397,6 +404,7 @@ sub struct {
                         ldapGroupRecursive => 'bool:/ldapGroupRecursive',
                         ldapGroupAttributeNameGroup =>
                           'text:/ldapGroupAttributeNameGroup',
+                        _help => 'authLDAPGroups',
                     },
 
                     ldapPassword => {
@@ -408,6 +416,7 @@ sub struct {
                         ldapChangePasswordAsUser =>
                           'bool:/ldapChangePasswordAsUser',
                         ldapPwdEnc => 'text:/ldapPwdEnc',
+                        _help      => 'authLDAPPassword',
                     },
 
                 },
@@ -416,6 +425,7 @@ sub struct {
                 sslParams => {
                     _nodes =>
                       [qw(SSLAuthnLevel SSLVar SSLLDAPField SSLRequire)],
+                    _help         => 'authSSL',
                     SSLAuthnLevel => 'int:/SSLAuthnLevel',
                     SSLVar        => 'text:/SSLVar',
                     SSLLDAPField  => 'text:/SSLLDAPField',
@@ -427,6 +437,7 @@ sub struct {
                     _nodes => [
                         qw(CAS_authnLevel CAS_url CAS_CAFile CAS_renew CAS_gateway CAS_pgtFile cn:CAS_proxiedServices)
                     ],
+                    _help               => 'authCAS',
                     CAS_authnLevel      => 'int:/CAS_authnLevel',
                     CAS_url             => 'text:/CAS_url',
                     CAS_CAFile          => 'text:/CAS_CAFile',
@@ -434,9 +445,9 @@ sub struct {
                     CAS_gateway         => 'bool:/CAS_gateway',
                     CAS_pgtFile         => 'text:/CAS_pgtFile',
                     CAS_proxiedServices => {
-                        _nodes => ['hash:/CAS_proxiedServices:default:btext'],
+                        _nodes => ['hash:/CAS_proxiedServices:authCAS:btext'],
                         _js    => 'hashRoot',
-                        _help  => 'default',
+                        _help  => 'authCAS',
                     },
 
                 },
@@ -446,14 +457,15 @@ sub struct {
                     _nodes => [
                         qw(remotePortal remoteCookieName remoteGlobalStorage cn:remoteGlobalStorageOptions)
                     ],
+                    _help                      => 'authRemote',
                     remotePortal               => 'text:/remotePortal',
                     remoteCookieName           => 'text:/remoteCookieName',
                     remoteGlobalStorage        => 'text:/remoteGlobalStorage',
                     remoteGlobalStorageOptions => {
                         _nodes =>
-                          ['hash:/remoteGlobalStorageOptions:default:btext'],
+                          ['hash:/remoteGlobalStorageOptions:authRemote:btext'],
                         _js   => 'hashRoot',
-                        _help => 'default',
+                        _help => 'authRemote',
                     },
                 },
 
@@ -461,6 +473,7 @@ sub struct {
                 proxyParams => {
                     _nodes =>
                       [qw(soapAuthService remoteCookieName soapSessionService)],
+                    _help              => 'authProxy',
                     soapAuthService    => 'text:/soapAuthService',
                     remoteCookieName   => 'text:/remoteCookieName',
                     soapSessionService => 'text:/soapSessionService',
@@ -469,10 +482,11 @@ sub struct {
                 # OpenID
                 openIdParams => {
                     _nodes => [qw(openIdAuthnLevel openIdSecret openIdIDPList)],
+                    _help  => 'authOpenID',
                     openIdAuthnLevel => 'int:/openIdAuthnLevel',
                     openIdSecret     => 'text:/openIdSecret',
                     openIdIDPList =>
-                      'text:/openIdIDPList:authopenid:openididplist',
+                      'text:/openIdIDPList:authOpenID:openididplist',
                 },
 
                 # Twitter
@@ -480,6 +494,7 @@ sub struct {
                     _nodes => [
                         qw(twitterAuthnLevel twitterKey twitterSecret twitterAppName)
                     ],
+                    _help             => 'authTwitter',
                     twitterAuthnLevel => 'int:/twitterAuthnLevel',
                     twitterKey        => 'text:/twitterKey',
                     twitterSecret     => 'text:/twitterSecret',
@@ -491,12 +506,10 @@ sub struct {
                     _nodes => [
                         qw(dbiAuthnLevel n:dbiConnection n:dbiSchema n:dbiPassword)
                     ],
-
-                    dbiAuthnLevel => 'int:/dbiAuthnLevel',
-
+                    _help         => 'authDBI',
+                    dbiAuthnLevel => 'int:/dbiAuthnLevel:authDBILevel:int',
                     dbiConnection => {
                         _nodes => [qw(n:dbiConnectionAuth n:dbiConnectionUser)],
-
                         dbiConnectionAuth => {
                             _nodes =>
                               [qw(dbiAuthChain dbiAuthUser dbiAuthPassword)],
@@ -504,7 +517,6 @@ sub struct {
                             dbiAuthUser     => 'text:/dbiAuthUser',
                             dbiAuthPassword => 'text:/dbiAuthPassword',
                         },
-
                         dbiConnectionUser => {
                             _nodes =>
                               [qw(dbiUserChain dbiUserUser dbiUserPassword)],
@@ -512,47 +524,53 @@ sub struct {
                             dbiUserUser     => 'text:/dbiUserUser',
                             dbiUserPassword => 'text:/dbiUserPassword',
                         },
+                        _help => 'authDBIConnection',
                     },
 
                     dbiSchema => {
                         _nodes => [
-                            qw(dbiAuthTable dbiUserTable dbiAuthLoginCol dbiAuthPasswordCol dbiAuthMailCol userPivot)
+                            qw(dbiAuthTable dbiUserTable dbiAuthLoginCol dbiAuthPasswordCol dbiPasswordMailCol userPivot)
                         ],
                         dbiAuthTable       => 'text:/dbiAuthTable',
                         dbiUserTable       => 'text:/dbiUserTable',
                         dbiAuthLoginCol    => 'text:/dbiAuthLoginCol',
                         dbiAuthPasswordCol => 'text:/dbiAuthPasswordCol',
-                        dbiAuthMailCol     => 'text:/dbiAuthMailCol',
+                        dbiPasswordMailCol => 'text:/dbiPasswordMailCol',
                         userPivot          => 'text:/userPivot',
+                        _help              => 'authDBISchema',
                     },
 
                     dbiPassword => {
                         _nodes              => [qw(dbiAuthPasswordHash)],
                         dbiAuthPasswordHash => 'text:/dbiAuthPasswordHash',
+                        _help               => 'authDBIPassword',
                     },
                 },
 
                 # Apache
                 apacheParams => {
                     _nodes           => [qw(apacheAuthnLevel)],
+                    _help            => 'authApache',
                     apacheAuthnLevel => 'int:/apacheAuthnLevel',
                 },
 
                 # Null
                 nullParams => {
                     _nodes         => [qw(nullAuthnLevel)],
+                    _help          => 'authNull',
                     nullAuthnLevel => 'int:/nullAuthnLevel',
                 },
 
                 # Choice
                 choiceParams => {
                     _nodes => [qw(authChoiceParam n:authChoiceModules)],
+                    _help  => 'authChoice',
                     authChoiceParam   => 'text:/authChoiceParam',
                     authChoiceModules => {
                         _nodes =>
-                          ['hash:/authChoiceModules:default:authChoice'],
+                          ['hash:/authChoiceModules:authChoice:authChoice'],
                         _js   => 'authChoiceRoot',
-                        _help => 'default',
+                        _help => 'authChoice',
                     },
                 },
 
@@ -561,29 +579,35 @@ sub struct {
             # ISSUERDB PARAMETERS
             issuerParams => {
                 _nodes       => [qw(issuerDBSAML issuerDBCAS issuerDBOpenID)],
+                _help        => 'issuerdb',
                 issuerDBSAML => {
                     _nodes => [
                         qw(issuerDBSAMLActivation issuerDBSAMLPath issuerDBSAMLRule)
                     ],
+                    _help                  => 'issuerdbSAML',
                     issuerDBSAMLActivation => 'bool:/issuerDBSAMLActivation',
                     issuerDBSAMLPath       => 'text:/issuerDBSAMLPath',
-                    issuerDBSAMLRule       => 'text:/issuerDBSAMLRule',
+                    issuerDBSAMLRule =>
+                      'text:/issuerDBSAMLRule:issuerdbSAML:boolOrPerlExpr',
                 },
                 issuerDBCAS => {
                     _nodes => [
                         qw(issuerDBCASActivation issuerDBCASPath issuerDBCASRule issuerDBCASOptions)
                     ],
+                    _help                 => 'issuerdbCAS',
                     issuerDBCASActivation => 'bool:/issuerDBCASActivation',
                     issuerDBCASPath       => 'text:/issuerDBCASPath',
-                    issuerDBCASRule       => 'text:/issuerDBCASRule',
+                    issuerDBCASRule =>
+                      'text:/issuerDBCASRule:issuerdbCAS:boolOrPerlExpr',
                     issuerDBCASOptions    => {
                         _nodes => [qw(casAttr casStorage cn:casStorageOptions)],
-                        casAttr           => 'text:casAttr',
+                        casAttr           => 'text:/casAttr',
                         casStorage        => 'text:/casStorage',
                         casStorageOptions => {
-                            _nodes => ['hash:/casStorageOptions:default:btext'],
+                            _nodes =>
+                              ['hash:/casStorageOptions:issuerDBCAS:btext'],
                             _js    => 'hashRoot',
-                            _help  => 'default',
+                            _help => 'issuerdbCAS',
                         },
                     },
                 },
@@ -591,18 +615,20 @@ sub struct {
                     _nodes => [
                         qw(issuerDBOpenIDActivation issuerDBOpenIDPath issuerDBOpenIDRule n:issuerDBOpenIDOptions)
                     ],
+                    _help => 'issuerdbOpenID',
                     issuerDBOpenIDActivation =>
                       'bool:/issuerDBOpenIDActivation',
                     issuerDBOpenIDPath    => 'text:/issuerDBOpenIDPath',
-                    issuerDBOpenIDRule    => 'text:/issuerDBOpenIDRule',
+                    issuerDBOpenIDRule =>
+                      'text:/issuerDBOpenIDRule:issuerdbOpenID:boolOrPerlExpr',
                     issuerDBOpenIDOptions => {
                         _nodes => [
                             qw(openIdIssuerSecret openIdAttr openIdSPList n:openIdSreg)
                         ],
                         openIdIssuerSecret => 'text:/openIdIssuerSecret',
-                        openIdAttr         => 'text:openIdAttr',
+                        openIdAttr         => 'text:/openIdAttr',
                         openIdSPList =>
-                          'text:/openIdSPList:issuerdbopenid:openididplist',
+                          'text:/openIdSPList:issuerdbOpenID:openididplist',
                         openIdSreg => {
                             _nodes => [
                                 qw(openIdSreg_fullname openIdSreg_nickname openIdSreg_language openIdSreg_postcode openIdSreg_timezone openIdSreg_country openIdSreg_gender openIdSreg_email openIdSreg_dob)
@@ -624,9 +650,10 @@ sub struct {
             # LOGS PARAMETERS
             logParams => {
                 _nodes => [qw(syslog useXForwardedForIP whatToTrace)],
+                _help  => 'logs',
                 syslog => 'text:/syslog',
                 useXForwardedForIP => 'bool:/useXForwardedForIP',
-                whatToTrace        => 'text:/whatToTrace:whatToTrace:text',
+                whatToTrace        => 'text:/whatToTrace',
             },
 
             # COOKIE PARAMETERS
@@ -634,11 +661,11 @@ sub struct {
                 _nodes =>
                   [qw(cookieName domain cda securedCookie cookieExpiration)],
                 _help      => 'cookies',
-                cookieName => 'text:/cookieName:cookieName:text',
-                domain     => 'text:/domain:domain:text',
+                cookieName => 'text:/cookieName',
+                domain     => 'text:/domain',
                 cda        => 'bool:/cda',
                 securedCookie =>
-                  'select:/securedCookie:securedCookie:securedCookieValues',
+                  'select:/securedCookie:cookies:securedCookieValues',
                 cookieExpiration => 'text:/cookieExpiration',
             },
 
@@ -647,21 +674,23 @@ sub struct {
                 _nodes => [
                     qw(grantSessionRule storePassword timeout timeoutActivity n:sessionStorage n:multipleSessions)
                 ],
-                _help => 'storage',
+                _help => 'sessions',
 
                 grantSessionRule => 'textarea:/grantSessionRule',
                 storePassword    => 'bool:/storePassword',
-                timeout          => 'int:/timeout:timeout:int',
+                timeout          => 'int:/timeout',
                 timeoutActivity =>
-                  'text:/timeoutActivity:timeoutActivity:timeoutActivityParams',
+                  'text:/timeoutActivity:sessions:timeoutActivityParams',
 
                 sessionStorage => {
                     _nodes => [qw(globalStorage cn:globalStorageOptions)],
+                    _help  => 'sessionsdb',
                     globalStorage        => 'text:/globalStorage',
                     globalStorageOptions => {
-                        _nodes => ['hash:/globalStorageOptions:storage:btext'],
+                        _nodes =>
+                          ['hash:/globalStorageOptions:sessionsdb:btext'],
                         _js    => 'hashRoot',
-                        _help  => 'storage',
+                        _help => 'sessionsdb',
                     },
                 },
 
@@ -682,14 +711,14 @@ sub struct {
                 _nodes => [
                     qw(customFunctions n:soap n:notifications n:passwordManagement n:security n:redirection n:specialHandlers cn:logoutServices)
                 ],
+                _help => 'advanced',
 
-                customFunctions => 'text:/customFunctions',
+                customFunctions => 'text:/customFunctions:customfunctions:text',
 
                 soap => {
-                    _nodes         => [qw(Soap exportedAttr trustedDomains)],
-                    Soap           => 'bool:/Soap',
-                    exportedAttr   => 'text:/exportedAttr',
-                    trustedDomains => 'text:/trustedDomains',
+                    _nodes       => [qw(Soap exportedAttr)],
+                    Soap         => 'bool:/Soap',
+                    exportedAttr => 'text:/exportedAttr',
                 },
 
                 notifications => {
@@ -712,6 +741,7 @@ sub struct {
                     _nodes => [
                         qw(SMTPServer mailUrl mailFrom mailSubject mailBody mailConfirmSubject mailConfirmBody randomPasswordRegexp)
                     ],
+                    _help                => 'password',
                     SMTPServer           => 'text:/SMTPServer',
                     mailUrl              => 'text:/mailUrl',
                     mailFrom             => 'text:/mailFrom',
@@ -723,19 +753,22 @@ sub struct {
                 },
 
                 security => {
-                    _nodes      => [qw(userControl portalForceAuthn key)],
-                    userControl => 'text:/userControl:userControl:text',
-                    portalForceAuthn =>
-                      'bool:/portalForceAuthn:portalForceAuthn:bool',
-                    key => 'text:/key:key:text',
+                    _nodes =>
+                      [qw(userControl portalForceAuthn key trustedDomains)],
+                    _help            => 'security',
+                    userControl      => 'text:/userControl',
+                    portalForceAuthn => 'bool:/portalForceAuthn',
+                    key              => 'text:/key',
+                    trustedDomains => 'text:/trustedDomains',
                 },
 
                 redirection => {
                     _nodes => [
                         qw(https port useRedirectOnForbidden useRedirectOnError)
                     ],
-                    https  => 'bool:/https',
-                    port   => 'int:/port',
+                    _help                  => 'redirections',
+                    https                  => 'bool:/https',
+                    port                   => 'int:/port',
                     useRedirectOnForbidden => 'bool:/useRedirectOnForbidden',
                     useRedirectOnError     => 'bool:/useRedirectOnError',
                 },
@@ -748,6 +781,7 @@ sub struct {
                         _nodes => [
                             qw(zimbraPreAuthKey zimbraAccountKey zimbraBy zimbraUrl zimbraSsoUrl)
                         ],
+                        _help            => 'zimbra',
                         zimbraPreAuthKey => 'text:/zimbraPreAuthKey',
                         zimbraAccountKey => 'text:/zimbraAccountKey',
                         zimbraBy     => 'text:/zimbraBy:default:zimbraByParams',
@@ -758,15 +792,16 @@ sub struct {
                     # Sympa
                     sympaHandler => {
                         _nodes       => [qw(sympaSecret sympaMailKey)],
+                        _help        => 'sympa',
                         sympaSecret  => 'text:/sympaSecret',
                         sympaMailKey => 'text:/sympaMailKey',
                     },
                 },
 
                 logoutServices => {
-                    _nodes => ['hash:/logoutServices:default:btext'],
+                    _nodes => ['hash:/logoutServices:logoutforward:btext'],
                     _js    => 'hashRoot',
-                    _help  => 'default',
+                    _help  => 'logoutforward',
                 },
 
             },
@@ -784,21 +819,21 @@ sub struct {
             exportedVars => {
                 _nodes => ['hash:/exportedVars:vars:btext'],
                 _js    => 'hashRoot',
-                _help  => 'vars',
+                _help  => 'exportedVars',
             },
 
             # MACROS
             macros => {
                 _nodes => ['hash:/macros:macros:btext'],
                 _js    => 'hashRoot',
-                _help  => 'macros',
+                _help  => 'macrosandgroups',
             },
 
             # GROUPS
             groups => {
                 _nodes => ['hash:/groups:groups:btext'],
                 _js    => 'hashRoot',
-                _help  => 'groups',
+                _help  => 'macrosandgroups',
             },
         },
 
@@ -1154,7 +1189,7 @@ sub testStruct {
             msgFail => 'Bad domain',
         },
         exportedHeaders => {
-            keyTest    => Lemonldap::NG::Common::Regexp::HOSTNAME,
+            keyTest    => Lemonldap::NG::Common::Regexp::HOSTNAME(),
             keyMsgFail => 'Bad virtual host name',
             '*'        => {
                 keyTest    => qr/^\w([\w\-]*\w)?$/,
@@ -1246,7 +1281,7 @@ sub testStruct {
                 my @s = split( /[\s,]+/, $l );
                 foreach my $s (@s) {
                     $s =~
-/^(?:ldap(?:s|\+tls|i):\/\/)?\w[\w\-\.]+\w(?::\d{0,5})?\/?$/
+/^(?:ldap(?:s|\+tls|i)?:\/\/)?\w[\w\-\.]+\w(?::\d{0,5})?\/?$/
                       or return ( 0, "Bad ldap uri \"$s\"" );
                 }
                 return 1;
@@ -1273,7 +1308,7 @@ sub testStruct {
         ldapVersion                  => $testNotDefined,
         ldapRaw                      => $testNotDefined,
         locationRules                => {
-            keyTest => Lemonldap::NG::Common::Regexp::HOSTNAME,
+            keyTest => Lemonldap::NG::Common::Regexp::HOSTNAME(),
             msgFail => 'Bad virtual host name',
             '*'     => {
                 keyTest => $pcre,
@@ -1283,7 +1318,7 @@ sub testStruct {
                     if ( $e =~ s/^logout(?:_(?:app_sso|app|sso))?\s*// ) {
                         return (
                             $e eq ''
-                              or $e =~ Lemonldap::NG::Common::Regexp::HTTP_URI
+                              or $e =~ Lemonldap::NG::Common::Regexp::HTTP_URI()
                             ? 1
                             : ( 0, "bad url \"$e\"" )
                         );
@@ -1357,7 +1392,7 @@ sub testStruct {
             msgFail => 'Unvalid session field',
         },
         post => {
-            keyTest    => Lemonldap::NG::Common::Regexp::HOSTNAME,
+            keyTest    => Lemonldap::NG::Common::Regexp::HOSTNAME(),
             keyMsgFail => 'Bad virtual host name',
             '*'        => { keyTest => $pcre, },
         },
@@ -1400,7 +1435,7 @@ sub testStruct {
         useXForwardedForIP     => $boolean,
         variables              => $testNotDefined,
         vhostOptions           => {
-            keyTest    => Lemonldap::NG::Common::Regexp::HOSTNAME,
+            keyTest    => Lemonldap::NG::Common::Regexp::HOSTNAME(),
             keyMsgFail => 'Bad virtual host name',
             '*'        => {
                 keyTest    => qr/^vhost(Port|Https)$/,
@@ -1514,15 +1549,15 @@ sub testStruct {
         samlAuthnContextMapKerberos                   => $integer,
         samlCommonDomainCookieActivation              => $boolean,
         samlCommonDomainCookieDomain                  => {
-            test    => Lemonldap::NG::Common::Regexp::HOSTNAME,
+            test    => Lemonldap::NG::Common::Regexp::HOSTNAME(),
             msgFail => 'Bad domain',
         },
         samlCommonDomainCookieReader => {
-            test    => Lemonldap::NG::Common::Regexp::HTTP_URI,
+            test    => Lemonldap::NG::Common::Regexp::HTTP_URI(),
             msgFail => 'Bad URI',
         },
         samlCommonDomainCookieWriter => {
-            test    => Lemonldap::NG::Common::Regexp::HTTP_URI,
+            test    => Lemonldap::NG::Common::Regexp::HTTP_URI(),
             msgFail => 'Bad URI',
         },
 
@@ -1535,7 +1570,7 @@ sub testStruct {
         # CAS
         CAS_authnLevel => $integer,
         CAS_url        => {
-            test    => Lemonldap::NG::Common::Regexp::HTTP_URI,
+            test    => Lemonldap::NG::Common::Regexp::HTTP_URI(),
             msgFail => 'Bad CAS url',
         },
         CAS_CAFile          => $testNotDefined,
@@ -1594,7 +1629,7 @@ sub testStruct {
         dbiUserTable        => $testNotDefined,
         dbiAuthLoginCol     => $testNotDefined,
         dbiAuthPasswordCol  => $testNotDefined,
-        dbiAuthMailCol      => $testNotDefined,
+        dbiPasswordMailCol  => $testNotDefined,
         userPivot           => $testNotDefined,
         dbiAuthPasswordHash => $testNotDefined,
 
@@ -1675,7 +1710,7 @@ sub defaultConf {
         notification                => '0',
         notificationStorage         => 'File',
         notifyDeleted               => '1',
-        notifyOther                 => '1',
+        notifyOther                 => '0',
         openIdSreg_fullname         => 'cn',
         openIdSreg_nickname         => 'uid',
         openIdSreg_timezone         => '_timezone',
@@ -1871,9 +1906,11 @@ sub subDefaultConf {
 # subroutines to execute.
 #
 # Subroutines can return one of the followings :
-# - (1)         : everything is OK
-# - (1,message) : OK with a warning
-# - (0,message) : NOK
+# -  (1)         : everything is OK
+# -  (1,message) : OK with a warning
+# -  (0,message) : NOK
+# - (-1,message) : OK, but must be confirmed (ignored if confirm parameter is
+# set
 #
 # Those subroutines can also modify configuration.
 #
@@ -1884,8 +1921,6 @@ sub globalTests {
     return {
 
         # 1. CHECKS
-
-        # TODO: better parsing using Common::Regexp
 
         # Check if portal is in domain
         portalIsInDomain => sub {
@@ -1957,6 +1992,66 @@ sub globalTests {
                     ? 'Values of parameters '
                       . join( ',', @tmp )
                       . ' are not defined in exported attributes or macros'
+                    : ''
+                )
+            );
+        },
+
+        # Try to use Apache::Session module
+        testApacheSession => sub {
+            my ( $id, %h );
+            return 1
+              if ( $Lemonldap::NG::Handler::CGI::globalStorage eq
+                   $conf->{globalStorage}
+                or $conf->{globalStorage} eq
+                'Lemonldap::NG::Common::Apache::Session::SOAP' );
+            eval "use $conf->{globalStorage}";
+            return ( -1, "Unknown package $conf->{globalStorage}" ) if ($@);
+            eval {
+                tie %h, $conf->{globalStorage}, undef,
+                  $conf->{globalStorageOptions};
+            };
+            return ( -1, "Unable to create a session ($@)" )
+              if ( $@ or not tied(%h) );
+            eval {
+                $h{a} = 1;
+                $id = $h{_session_id} or return ( -1, 'No _session_id' );
+                untie(%h);
+                tie %h, $conf->{globalStorage}, $id,
+                  $conf->{globalStorageOptions};
+            };
+            return ( -1, "Unable to insert datas ($@)" ) if ($@);
+            return ( -1, "Unable to recover data stored" )
+              unless ( $h{a} == 1 );
+            eval { tied(%h)->delete; };
+            return ( -1, "Unable to delete session ($@)" ) if ($@);
+            my $gc = $Lemonldap::NG::Handler::CGI::globalStorage;
+            return ( -1,
+'All sessions may be lost and you <b>must</b> restart all your Apache servers'
+            ) if ( $conf->{globalStorage} ne $gc );
+            return 1;
+        },
+
+        # Warn if cookie name has changed
+        cookieNameChanged => sub {
+            return (
+                1,
+                (
+                    $Lemonldap::NG::Handler::CGI::cookieName ne
+                      $conf->{cookieName}
+                    ? 'Cookie name has changed, you <b>must</b> restart all your Apache servers'
+                    : ()
+                )
+            );
+        },
+
+        # Warn if manager seems to be unprotected
+        managerProtection => sub {
+            return (
+                1,
+                (
+                    $conf->{cfgAuthor} eq 'anonymous'
+                    ? 'Your manager seems to be unprotected'
                     : ''
                 )
             );

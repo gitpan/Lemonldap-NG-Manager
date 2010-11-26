@@ -24,7 +24,7 @@ use utf8;
 our $whatToTrace;
 *whatToTrace = \$Lemonldap::NG::Handler::_CGI::whatToTrace;
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 
 our @ISA = qw(
   Lemonldap::NG::Handler::CGI
@@ -356,12 +356,11 @@ sub delete {
     if ($@) {
         if ( $@ =~ /does not exist in the data store/i ) {
             $self->lmLog( "Apache::Session error: $@", 'error' );
-            $res .= '<div id="help" class="ui-corner-all">';
             $res .= '<h1 class="ui-widget-header ui-corner-all">'
               . $self->translate('error') . '</h1>';
             $res .= '<div class="ui-corner-all ui-widget-content">';
             $res .= "Apache::Session error: $@";
-            $res .= '</div></div>';
+            $res .= '</div>';
             return $res;
         }
         else {
@@ -378,12 +377,11 @@ sub delete {
             };
             if ($@) {
                 $self->lmLog( "Apache::Session error: $@", 'error' );
-                $res .= '<div id="help" class="ui-corner-all">';
                 $res .= '<h1 class="ui-widget-header ui-corner-all">'
                   . $self->translate('error') . '</h1>';
                 $res .= '<div class="ui-corner-all ui-widget-content">';
                 $res .= "Apache::Session error: $@";
-                $res .= '</div></div>';
+                $res .= '</div>';
                 return $res;
             }
         }
@@ -393,10 +391,8 @@ sub delete {
         }
         else {
             $self->lmLog( "Session $id deleted", 'info' );
-            $res .= '<div id="help" class="ui-corner-all">';
             $res .= '<h1 class="ui-widget-header ui-corner-all">'
               . $self->translate('sessionDeleted') . '</h1>';
-            $res .= '</div>';
             return $res;
         }
     }
@@ -413,12 +409,11 @@ sub session {
     eval { tie %h, $globalStorage, $id, $globalStorageOptions; };
     if ($@) {
         $self->lmLog( "Apache::Session error: $@", 'error' );
-        $res .= '<div id="help" class="ui-corner-all">';
         $res .= '<h1 class="ui-widget-header ui-corner-all">'
           . $self->translate('error') . '</h1>';
         $res .= '<div class="ui-corner-all ui-widget-content">';
         $res .= "Apache::Session error: $@";
-        $res .= '</div></div>';
+        $res .= '</div>';
         return $res;
     }
 
@@ -428,7 +423,6 @@ sub session {
 
     # General informations
 
-    $res .= '<div id="edition" class="ui-corner-all">';
     $res .= '<h1 class="ui-widget-header ui-corner-all">';
     $res .= $self->translate('sessionTitle');
     $res .= '</h1>';
@@ -591,8 +585,6 @@ sub session {
       . ' class="ui-state-default ui-corner-all"'
       . " value=\""
       . $self->translate('deleteSession') . "\" />";
-    $res .= '</div>';
-
     $res .= '</div>';
 
     return $res;
@@ -857,11 +849,7 @@ Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 Copyright (C) 2008, 2010 by Xavier Guimard
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.8 or,
+it under the same terms as Perl itself, either Perl version 5.10.0 or,
 at your option, any later version of Perl 5 you may have available.
-
-C<jquery.simple.tree> embedded javascript library is licensed under BSD
-L<http://en.wikipedia.org/wiki/BSD_License> and copyrighted (c) 2008 by Peter
-Panov E<lt>panov@elcat.kgE<gt>, IKEEN Group L<http://www.ikeen.com/>
 
 =cut

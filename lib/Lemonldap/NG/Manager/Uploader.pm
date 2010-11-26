@@ -20,7 +20,7 @@ use Lemonldap::NG::Manager::_Struct;       #link protected struct _Struct object
 use Lemonldap::NG::Manager::_i18n;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 our ( $stylesheet, $parser );
 
 ## @method void confUpload(ref rdata)
@@ -86,7 +86,7 @@ sub confUpload {
 
         my $NK = 0;
         $id =~
-          s/^text_(NewID_)?li_(\w+)(\d)(?:_\d+)?$/decode_base64($2.'='x $3)/e;
+s/^text_(NewID_)?li_([\w\/\+\=]+)(\d)(?:_\d+)?$/decode_base64($2.'='x $3)/e;
         $NK = 1 if ($1);
         $id =~ s/\r//g;
         $id =~ s/^\///;
@@ -356,7 +356,12 @@ s/^(samlSPMetaDataXML|samlSPMetaDataExportedAttributes|samlSPMetaDataOptions)\/(
         }
     }
 
-    # 1.5 Global tests
+    # 1.5 Author attributes for accounting
+    $newConf->{cfgAuthor}   = $ENV{REMOTE_USER} || 'anonymous';
+    $newConf->{cfgAuthorIP} = $ENV{REMOTE_ADDR};
+    $newConf->{cfgDate}     = time();
+
+    # 1.6 Global tests
     $self->lmLog( "Launch global tests", 'debug' );
     {
         my $tests = $self->globalTests($newConf);
@@ -364,23 +369,22 @@ s/^(samlSPMetaDataXML|samlSPMetaDataExportedAttributes|samlSPMetaDataOptions)\/(
             my ( $res, $msg );
             eval {
                 ( $res, $msg ) = $sub->();
-                if ($res) {
+                if ( $res == -1 ) {
+                    $errors->{force}->{$name} = $msg
+                      unless ( $self->param('force') );
+                }
+                elsif ($res) {
                     if ($msg) {
                         $errors->{warnings}->{$name} = $msg;
                     }
                 }
                 else {
-                    $errors->{error}->{$name} = $msg;
+                    $errors->{errors}->{$name} = $msg;
                 }
             };
             $errors->{warnings}->{$name} = "Test $name failed: $@" if ($@);
         }
     }
-
-    # 1.6 Author attributes for accounting
-    $newConf->{cfgAuthor}   = $ENV{REMOTE_USER} || 'anonymous';
-    $newConf->{cfgAuthorIP} = $ENV{REMOTE_ADDR};
-    $newConf->{cfgDate}     = time();
 
     # 2. SAVE CONFIGURATION
 
@@ -392,6 +396,19 @@ s/^(samlSPMetaDataXML|samlSPMetaDataExportedAttributes|samlSPMetaDataOptions)\/(
         $errors->{result}->{msg}    = $self->translate('syntaxError');
         $self->_sub( 'userInfo',
             "Configuration rejected for $newConf->{cfgAuthor}: syntax error" );
+    }
+    elsif ( $errors->{force} ) {
+        $errors->{result}->{cfgNum} = 0;
+        $errors->{result}->{msg}    = $self->translate('warning');
+        $self->_sub( 'userInfo',
+"Configuration rejected for $newConf->{cfgAuthor}: confirmation needed"
+        );
+        $errors->{result}->{other} = '*<a href="javascript:uploadConf(1)">'
+          . $self->translate('clickHereToForce') . '</a>';
+        foreach my $k ( keys %{ $errors->{force} } ) {
+            $errors->{errors}->{$k} =
+              delete( $errors->{force}->{$k} ) . '<sup>*</sup>';
+        }
     }
 
     # 2.2 Try to save configuration
@@ -440,7 +457,8 @@ s/^(samlSPMetaDataXML|samlSPMetaDataExportedAttributes|samlSPMetaDataOptions)\/(
                 UPLOAD_DENIED,      'uploadDenied',
                 SYNTAX_ERROR,       'syntaxError',
                 DEPRECATED,         'confModuledeprecated',
-            }->{ $errors->{result}->{cfgNum} };
+              }->{ $errors->{result}->{cfgNum} }
+              || $msg;
 
             # Log failure using Lemonldap::NG::Common::CGI::userError()
             $self->_sub( 'userError',
