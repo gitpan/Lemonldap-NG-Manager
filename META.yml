@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Lemonldap-NG-Manager
-version:            1.0.0
+version:            1.0.2
 abstract:           Perl extension for managing Lemonldap::NG Web-SSO
 author:
     - Xavier Guimard <x.guimard@free.fr>, Clément Oudot <clement@oodo.net>, Thomas Chemineau <thomas.chemineau@gmail.com>
@@ -11,11 +11,14 @@ configure_requires:
 build_requires:
     Convert::PEM:         0
     Crypt::OpenSSL::RSA:  0
+    Crypt::OpenSSL::X509:  0
     IO::String:           0
 requires:
     CGI:                  3.08
     Convert::PEM:         0
     Crypt::OpenSSL::RSA:  0
+    Crypt::OpenSSL::X509:  0
+    File::Basename:       0
     HTML::Template:       0
     IO::String:           0
     JSON:                 0

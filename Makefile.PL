@@ -1,3 +1,4 @@
+use 5.008;
 use ExtUtils::MakeMaker;
 
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
@@ -9,10 +10,12 @@ WriteMakefile(
     BUILD_REQUIRES => {
         'Convert::PEM'         => 0,
         'Crypt::OpenSSL::RSA'  => 0,
+        'Crypt::OpenSSL::X509' => 0,
         'IO::String'           => 0,
     },
     PREREQ_PM    => {
         'CGI'                    => 3.08,
+        'File::Basename'         => 0,
         'HTML::Template'         => 0,
         'JSON'                   => 0,
         'Lemonldap::NG::Common'  => 0.96,
