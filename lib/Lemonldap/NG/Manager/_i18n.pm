@@ -9,7 +9,7 @@ package Lemonldap::NG::Manager::_i18n;
 
 use strict;
 use AutoLoader qw(AUTOLOAD);
-our $VERSION = '1.0.0';
+our $VERSION = '1.0.5';
 
 ## @method string translate(string text,string lang)
 # Returns $text translated in $lang.
@@ -257,6 +257,8 @@ sub en {
         singleIP                     => 'One IP only by user',
         singleSession                => 'One session only by user',
         singleUserByIP               => 'One user by IP address',
+        SMTPAuthPass                 => 'SMTP password',
+        SMTPAuthUser                 => 'SMTP user',
         SMTPServer                   => 'SMTP server',
         soap                         => 'SOAP',
         Soap                         => 'Activation',
@@ -641,6 +643,8 @@ sub fr {
         singleIP                   => 'Une seule IP par utilisateur',
         singleSession              => 'Une seule session par utilisateur',
         singleUserByIP             => 'Une seule adresse IP par utilisateur',
+        SMTPAuthPass               => 'Mot de passe SMTP',
+        SMTPAuthUser               => 'Utilisateur SMTP',
         SMTPServer                 => 'Serveur SMTP',
         soap                       => 'SOAP',
         Soap                       => 'Activation',

@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.0.5';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -750,10 +750,12 @@ sub struct {
 
                 passwordManagement => {
                     _nodes => [
-                        qw(SMTPServer mailUrl mailFrom mailSubject mailBody mailConfirmSubject mailConfirmBody randomPasswordRegexp)
+                        qw(SMTPServer SMTPAuthUser SMTPAuthPass mailUrl mailFrom mailSubject mailBody mailConfirmSubject mailConfirmBody randomPasswordRegexp)
                     ],
                     _help                => 'password',
                     SMTPServer           => 'text:/SMTPServer',
+                    SMTPAuthUser         => 'text:/SMTPAuthUser',
+                    SMTPAuthPass         => 'text:/SMTPAuthPass',
                     mailUrl              => 'text:/mailUrl',
                     mailFrom             => 'text:/mailFrom',
                     mailSubject          => 'text:/mailSubject',
@@ -1175,6 +1177,8 @@ sub testStruct {
         passwordDB           => $testNotDefined,
         mailBody             => $testNotDefined,
         SMTPServer           => $testNotDefined,
+        SMTPAuthUser         => $testNotDefined,
+        SMTPAuthPass         => $testNotDefined,
         cookieExpiration     => $testNotDefined,
         notificationStorage  => $testNotDefined,
         mailUrl              => $testNotDefined,
@@ -2061,6 +2065,35 @@ sub globalTests {
                     : ''
                 )
             );
+        },
+
+        # Test SMTP connection and authentication
+        smtpConnectionAuthentication => sub {
+
+            # Skip test if no SMTP configuration
+            return 1 unless ( $conf->{SMTPServer} );
+
+            # Use SMTP
+            eval "use Net::SMTP";
+            return ( 0, "Net::SMTP module is required to use SMTP server" )
+              if ($@);
+
+            # Create SMTP object
+            my $smtp = Net::SMTP->new( $conf->{SMTPServer} );
+            return ( 0,
+                "SMTP connection to " . $conf->{SMTPServer} . " failed" )
+              unless ($smtp);
+
+            # Skip other tests if no authentication
+            return 1 unless ( $conf->{SMTPAuthUser} and $conf->{SMTPAuthPass} );
+
+            # Try authentication
+            return ( 0, "SMTP authentication failed" )
+              unless $smtp->auth( $conf->{SMTPAuthUser},
+                      $conf->{SMTPAuthPass} );
+
+            # Return
+            return 1;
         },
 
         # 2. MODIFICATIONS
