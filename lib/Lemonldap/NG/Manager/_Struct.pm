@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '1.0.5';
+our $VERSION = '1.0.6';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -1185,7 +1185,15 @@ sub testStruct {
         mailConfirmSubject   => $testNotDefined,
         mailConfirmBody      => $testNotDefined,
         authentication       => {
-            test    => qr/^[a-zA-Z]+(?:\s[\w\s:;]+)?$/,
+            test => sub {
+                my $e = shift;
+
+                # Do not check syntax for Multi
+                return 1 if ( $e =~ /^multi/i );
+
+                # Else, check the authentication module is valid
+                return ( $e =~ qr/^[a-zA-Z]+$/ );
+            },
             msgFail => 'Bad module name',
         },
         cda        => $boolean,
