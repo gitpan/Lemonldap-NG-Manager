@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 
 use strict;
-use Lemonldap::NG::Manager::Sessions;
+use Lemonldap::NG::Manager::Notifications;
 use HTML::Template;
 
-my $cgi = Lemonldap::NG::Manager::Sessions->new(
+my $cgi = Lemonldap::NG::Manager::Notifications->new(
     {
 
         # SESSION EXPLORER CUSTOMIZATION
@@ -25,7 +25,7 @@ my $cgi = Lemonldap::NG::Manager::Sessions->new(
         #      directory => '/usr/local/lemonlda-ng/conf/'
         #},
     }
-) or Lemonldap::NG::Common::CGI->abort('Unable to start sessions explorer');
+) or Lemonldap::NG::Common::CGI->abort('Unable to start notifications explorer');
 
 my $skin = $cgi->{managerSkin} or $cgi->abort('managerSkin is not defined');
 my $css = 'tree.css';
@@ -34,7 +34,7 @@ my $skin_dir  = 'skins';
 my $main_dir  = $cgi->{managerHtdocsPath};
 
 my $template = HTML::Template->new(
-    filename          => "$main_dir/$skin_dir/$skin/sessions.tpl",
+    filename          => "$main_dir/$skin_dir/$skin/notifications.tpl",
     die_on_bad_params => 0,
     cache             => 0,
     filter            => sub { $cgi->translate_template(@_) },

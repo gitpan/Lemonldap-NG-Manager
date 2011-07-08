@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '1.0.6';
+our $VERSION = '1.1.0';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -287,7 +287,7 @@ sub struct {
 
                 portalCustomization => {
                     _nodes => [
-                        qw(portalSkin portalDisplayResetPassword portalAutocomplete portalRequireOldPassword portalUserAttr portalOpenLinkInNewWindow portalAntiFrame)
+                        qw(portalSkin portalDisplayResetPassword portalAutocomplete portalRequireOldPassword hideOldPassword portalUserAttr portalOpenLinkInNewWindow portalAntiFrame)
                     ],
                     _help => 'portalcustom',
 
@@ -297,7 +297,8 @@ sub struct {
                     portalAutocomplete => 'bool:/portalAutocomplete',
                     portalRequireOldPassword =>
                       'bool:/portalRequireOldPassword',
-                    portalUserAttr => 'text:/portalUserAttr',
+                    hideOldPassword => 'bool:/hideOldPassword',
+                    portalUserAttr  => 'text:/portalUserAttr',
                     portalOpenLinkInNewWindow =>
                       'bool:/portalOpenLinkInNewWindow',
                     portalAntiFrame => 'bool:/portalAntiFrame',
@@ -341,12 +342,14 @@ sub struct {
                             dbi     => ['dbiParams'],
                             apache  => ['apacheParams'],
                             null    => ['nullParams'],
+                            slave   => ['slaveParams'],
                             choice  => [
-                                qw(ldapParams sslParams casParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams)
+                                qw(ldapParams sslParams casParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams)
                             ],
                             multi => [
-                                qw(ldapParams sslParams casParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams)
+                                qw(ldapParams sslParams casParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams)
                             ],
+                            yubikey => ['yubikeyParams'],
                         }->{$mod};
                         if ($tmp) {
                             $res{$_}++ foreach (@$tmp);
@@ -420,14 +423,20 @@ sub struct {
 
                     ldapPassword => {
                         _nodes => [
-                            qw(ldapPpolicyControl ldapSetPassword ldapChangePasswordAsUser ldapPwdEnc)
+                            qw(ldapPpolicyControl ldapSetPassword ldapChangePasswordAsUser ldapPwdEnc ldapUsePasswordResetAttribute ldapPasswordResetAttribute ldapPasswordResetAttributeValue)
                         ],
                         ldapPpolicyControl => 'bool:/ldapPpolicyControl',
                         ldapSetPassword    => 'bool:/ldapSetPassword',
                         ldapChangePasswordAsUser =>
                           'bool:/ldapChangePasswordAsUser',
                         ldapPwdEnc => 'text:/ldapPwdEnc',
-                        _help      => 'authLDAPPassword',
+                        ldapUsePasswordResetAttribute =>
+                          'bool:/ldapUsePasswordResetAttribute',
+                        ldapPasswordResetAttribute =>
+                          'text:/ldapPasswordResetAttribute',
+                        ldapPasswordResetAttributeValue =>
+                          'text:/ldapPasswordResetAttributeValue',
+                        _help => 'authLDAPPassword',
                     },
 
                 },
@@ -572,6 +581,14 @@ sub struct {
                     nullAuthnLevel => 'int:/nullAuthnLevel',
                 },
 
+                # Slave
+                slaveParams => {
+                    _nodes          => [qw(slaveAuthnLevel slaveUserHeader)],
+                    _help           => 'authSlave',
+                    slaveAuthnLevel => 'int:/slaveAuthnLevel',
+                    slaveUserHeader => 'text:/slaveUserHeader',
+                },
+
                 # Choice
                 choiceParams => {
                     _nodes => [qw(authChoiceParam n:authChoiceModules)],
@@ -583,6 +600,18 @@ sub struct {
                         _js   => 'authChoiceRoot',
                         _help => 'authChoice',
                     },
+                },
+
+                # Yubikey
+                yubikeyParams => {
+                    _nodes => [
+                        qw(yubikeyAuthnLevel yubikeyClientID yubikeySecretKey yubikeyPublicIDSize)
+                    ],
+                    _help               => 'authYubikey',
+                    yubikeyAuthnLevel   => 'int:/yubikeyAuthnLevel',
+                    yubikeyClientID     => 'text:/yubikeyClientID',
+                    yubikeySecretKey    => 'text:/yubikeySecretKey',
+                    yubikeyPublicIDSize => 'int:/yubikeyPublicIDSize',
                 },
 
             },
@@ -683,7 +712,7 @@ sub struct {
             # SESSIONS PARAMETERS
             sessionParams => {
                 _nodes => [
-                    qw(grantSessionRule storePassword timeout timeoutActivity n:sessionStorage n:multipleSessions)
+                    qw(grantSessionRule storePassword timeout timeoutActivity n:sessionStorage n:multipleSessions n:persistentSessions)
                 ],
                 _help => 'sessions',
 
@@ -715,6 +744,20 @@ sub struct {
                     notifyDeleted  => 'bool:/notifyDeleted',
                     notifyOther    => 'bool:/notifyOther',
                 },
+
+                persistentSessions => {
+                    _nodes =>
+                      [qw(persistentStorage cn:persistentStorageOptions)],
+                    _help                    => 'sessionsdb',
+                    persistentStorage        => 'text:/persistentStorage',
+                    persistentStorageOptions => {
+                        _nodes =>
+                          ['hash:/persistentStorageOptions:sessionsdb:btext'],
+                        _js   => 'hashRoot',
+                        _help => 'sessionsdb',
+                    },
+                },
+
             },
 
             # OTHER PARAMETERS
@@ -734,7 +777,7 @@ sub struct {
 
                 notifications => {
                     _nodes => [
-                        qw(notification notificationStorage cn:notificationStorageOptions)
+                        qw(notification notificationStorage cn:notificationStorageOptions notificationWildcard notificationXSLTfile)
                     ],
                     _help                      => 'notifications',
                     notification               => 'bool:/notification',
@@ -746,33 +789,55 @@ sub struct {
                         _js   => 'hashRoot',
                         _help => 'notifications',
                     },
+                    notificationWildcard => 'text:/notificationWildcard',
+                    notificationXSLTfile => 'text:/notificationXSLTfile',
                 },
 
                 passwordManagement => {
-                    _nodes => [
-                        qw(SMTPServer SMTPAuthUser SMTPAuthPass mailUrl mailFrom mailSubject mailBody mailConfirmSubject mailConfirmBody randomPasswordRegexp)
-                    ],
-                    _help                => 'password',
-                    SMTPServer           => 'text:/SMTPServer',
-                    SMTPAuthUser         => 'text:/SMTPAuthUser',
-                    SMTPAuthPass         => 'text:/SMTPAuthPass',
-                    mailUrl              => 'text:/mailUrl',
-                    mailFrom             => 'text:/mailFrom',
-                    mailSubject          => 'text:/mailSubject',
-                    mailBody             => 'textarea:/mailBody',
-                    mailConfirmSubject   => 'text:/mailConfirmSubject',
-                    mailConfirmBody      => 'textarea:/mailConfirmBody',
-                    randomPasswordRegexp => 'text:/randomPasswordRegexp',
+                    _nodes => [qw(SMTP mailHeaders mailContent mailOther)],
+                    _help  => 'password',
+                    SMTP   => {
+                        _nodes => [qw(SMTPServer SMTPAuthUser SMTPAuthPass)],
+                        SMTPServer   => 'text:/SMTPServer',
+                        SMTPAuthUser => 'text:/SMTPAuthUser',
+                        SMTPAuthPass => 'text:/SMTPAuthPass',
+                    },
+                    mailHeaders => {
+                        _nodes      => [qw(mailFrom mailReplyTo mailCharset)],
+                        mailFrom    => 'text:/mailFrom',
+                        mailReplyTo => 'text:/mailReplyTo',
+                        mailCharset => 'text:/mailCharset',
+                    },
+                    mailContent => {
+                        _nodes => [
+                            qw(mailSubject mailBody mailConfirmSubject mailConfirmBody)
+                        ],
+                        mailSubject        => 'text:/mailSubject',
+                        mailBody           => 'textarea:/mailBody',
+                        mailConfirmSubject => 'text:/mailConfirmSubject',
+                        mailConfirmBody    => 'textarea:/mailConfirmBody',
+                    },
+                    mailOther => {
+                        _nodes => [
+                            qw(mailUrl randomPasswordRegexp mailTimeout mailSessionKey)
+                        ],
+                        mailUrl              => 'text:/mailUrl',
+                        randomPasswordRegexp => 'text:/randomPasswordRegexp',
+                        mailTimeout          => 'int:/mailTimeout',
+                        mailSessionKey       => 'text:/mailSessionKey',
+                    },
                 },
 
                 security => {
-                    _nodes =>
-                      [qw(userControl portalForceAuthn key trustedDomains)],
+                    _nodes => [
+                        qw(userControl portalForceAuthn key trustedDomains useSafeJail)
+                    ],
                     _help            => 'security',
                     userControl      => 'text:/userControl',
                     portalForceAuthn => 'bool:/portalForceAuthn',
                     key              => 'text:/key',
                     trustedDomains   => 'text:/trustedDomains',
+                    useSafeJail      => 'bool:/useSafeJail',
                 },
 
                 redirection => {
@@ -787,7 +852,8 @@ sub struct {
                 },
 
                 specialHandlers => {
-                    _nodes => [qw(zimbraHandler sympaHandler)],
+                    _nodes =>
+                      [qw(zimbraHandler sympaHandler secureTokenHandler)],
 
                     # Zimbra
                     zimbraHandler => {
@@ -808,6 +874,20 @@ sub struct {
                         _help        => 'sympa',
                         sympaSecret  => 'text:/sympaSecret',
                         sympaMailKey => 'text:/sympaMailKey',
+                    },
+
+                    # Secure Token
+                    secureTokenHandler => {
+                        _nodes => [
+                            qw(secureTokenMemcachedServers secureTokenExpiration secureTokenAttribute secureTokenUrls secureTokenHeader)
+                        ],
+                        _help => 'securetoken',
+                        secureTokenMemcachedServers =>
+                          'text:/secureTokenMemcachedServers',
+                        secureTokenExpiration => 'int:/secureTokenExpiration',
+                        secureTokenAttribute  => 'text:secureTokenAttribute',
+                        secureTokenUrls       => 'text:/secureTokenUrls',
+                        secureTokenHeader     => 'text:/secureTokenHeader',
                     },
                 },
 
@@ -1169,7 +1249,9 @@ sub testStruct {
             keyTest    => qr/^(\d*)?\w+$/,
             keyMsgFail => 'Bad category ID',
         },
+        mailCharset          => $testNotDefined,
         mailFrom             => $testNotDefined,
+        mailReplyTo          => $testNotDefined,
         trustedDomains       => $testNotDefined,
         exportedAttr         => $testNotDefined,
         mailSubject          => $testNotDefined,
@@ -1181,7 +1263,11 @@ sub testStruct {
         SMTPAuthPass         => $testNotDefined,
         cookieExpiration     => $testNotDefined,
         notificationStorage  => $testNotDefined,
+        notificationWildcard => $testNotDefined,
+        notificationXSLTfile => $testNotDefined,
         mailUrl              => $testNotDefined,
+        mailTimeout          => $integer,
+        mailSessionKey       => $testNotDefined,
         mailConfirmSubject   => $testNotDefined,
         mailConfirmBody      => $testNotDefined,
         authentication       => {
@@ -1309,23 +1395,26 @@ sub testStruct {
             test    => qr/^\w[\w\-]*\w$/,
             msgFail => 'Bad encoding',
         },
-        ldapPpolicyControl           => $boolean,
-        ldapSetPassword              => $boolean,
-        ldapChangePasswordAsUser     => $boolean,
-        mailLDAPFilter               => $testNotDefined,
-        LDAPFilter                   => $testNotDefined,
-        AuthLDAPFilter               => $testNotDefined,
-        ldapGroupRecursive           => $boolean,
-        ldapGroupObjectClass         => $testNotDefined,
-        ldapGroupBase                => $testNotDefined,
-        ldapGroupAttributeName       => $testNotDefined,
-        ldapGroupAttributeNameUser   => $testNotDefined,
-        ldapGroupAttributeNameSearch => $testNotDefined,
-        ldapGroupAttributeNameGroup  => $testNotDefined,
-        ldapTimeout                  => $testNotDefined,
-        ldapVersion                  => $testNotDefined,
-        ldapRaw                      => $testNotDefined,
-        locationRules                => {
+        ldapUsePasswordResetAttribute   => $boolean,
+        ldapPasswordResetAttribute      => $testNotDefined,
+        ldapPasswordResetAttributeValue => $testNotDefined,
+        ldapPpolicyControl              => $boolean,
+        ldapSetPassword                 => $boolean,
+        ldapChangePasswordAsUser        => $boolean,
+        mailLDAPFilter                  => $testNotDefined,
+        LDAPFilter                      => $testNotDefined,
+        AuthLDAPFilter                  => $testNotDefined,
+        ldapGroupRecursive              => $boolean,
+        ldapGroupObjectClass            => $testNotDefined,
+        ldapGroupBase                   => $testNotDefined,
+        ldapGroupAttributeName          => $testNotDefined,
+        ldapGroupAttributeNameUser      => $testNotDefined,
+        ldapGroupAttributeNameSearch    => $testNotDefined,
+        ldapGroupAttributeNameGroup     => $testNotDefined,
+        ldapTimeout                     => $testNotDefined,
+        ldapVersion                     => $testNotDefined,
+        ldapRaw                         => $testNotDefined,
+        locationRules                   => {
             keyTest => Lemonldap::NG::Common::Regexp::HOSTNAME(),
             msgFail => 'Bad virtual host name',
             '*'     => {
@@ -1365,7 +1454,7 @@ sub testStruct {
             },
         },
         managerDn => {
-            test    => qr/^(?:\w+=.*,\w+=.*)?$/,
+            test    => qr/^(?:\w+=.*)?$/,
             msgFail => 'Bad LDAP dn',
         },
         managerPassword => {
@@ -1381,9 +1470,13 @@ sub testStruct {
             keyTest    => qr/^\w+$/,
             keyMsgFail => 'Bad parameter',
         },
-        notifyDeleted => $boolean,
-        notifyOther   => $boolean,
-        port          => {
+        notifyDeleted            => $boolean,
+        notifyOther              => $boolean,
+        persistentStorageOptions => {
+            keyTest    => qr/^\w+$/,
+            keyMsgFail => 'Bad parameter',
+        },
+        port => {
             test    => qr/^\d*$/,
             msgFail => 'Bad port number'
         },
@@ -1401,6 +1494,7 @@ sub testStruct {
         portalAntiFrame             => $boolean,
         portalParams                => $testNotDefined,
         portalRequireOldPassword    => $boolean,
+        hideOldPassword             => $boolean,
         portalSkin                  => {
             test    => qr/\w+$/,
             msgFail => 'Bad skin name',
@@ -1450,6 +1544,7 @@ sub testStruct {
         },
         useRedirectOnError     => $boolean,
         useRedirectOnForbidden => $boolean,
+        useSafeJail            => $boolean,
         useXForwardedForIP     => $boolean,
         variables              => $testNotDefined,
         vhostOptions           => {
@@ -1657,6 +1752,10 @@ sub testStruct {
         # Null
         nullAuthnLevel => $integer,
 
+        # Slave
+        slaveAuthnLevel => $integer,
+        slaveUserHeader => $testNotDefined,
+
         # Choice
         authChoiceParams  => $testNotDefined,
         authChoiceModules => {
@@ -1688,6 +1787,18 @@ sub testStruct {
         openIdSreg_email    => $lmAttrOrMacro,
         openIdSreg_dob      => $lmAttrOrMacro,
 
+        # Yubikey
+        yubikeyAuthnLevel   => $integer,
+        yubikeyClientID     => $testNotDefined,
+        yubikeySecretKey    => $testNotDefined,
+        yubikeyPublicIDSize => $integer,
+
+        # Secure Token
+        secureTokenMemcachedServers => $testNotDefined,
+        secureTokenExpiration       => $integer,
+        secureTokenAttribute        => $testNotDefined,
+        secureTokenUrls             => $testNotDefined,
+        secureTokenHeader           => $testNotDefined,
     };
 }
 
@@ -1706,6 +1817,7 @@ sub defaultConf {
         cookieName               => 'lemonldap',
         domain                   => 'example.com',
         globalStorage            => 'Apache::Session::File',
+        hideOldPassword          => '0',
         https                    => '0',
         issuerDBSAMLActivation   => '0',
         issuerDBSAMLPath         => '^/saml/',
@@ -1719,24 +1831,31 @@ sub defaultConf {
         key      => join( '', map { chr( int( rand(94) ) + 33 ) } ( 1 .. 16 ) ),
         ldapBase => 'dc=example,dc=com',
         ldapPort => '389',
-        ldapPwdEnc                  => 'utf-8',
-        ldapServer                  => 'localhost',
-        ldapTimeout                 => '120',
-        ldapVersion                 => '3',
-        managerDn                   => '',
-        managerPassword             => '',
-        notification                => '0',
-        notificationStorage         => 'File',
-        notifyDeleted               => '1',
-        notifyOther                 => '0',
-        openIdSreg_fullname         => 'cn',
-        openIdSreg_nickname         => 'uid',
-        openIdSreg_timezone         => '_timezone',
-        openIdSreg_email            => 'mail',
-        portal                      => 'http://auth.example.com',
-        portalSkin                  => 'pastel',
-        portalUserAttr              => '_user',
-        portalDisplayAppslist       => '1',
+        ldapPwdEnc                      => 'utf-8',
+        ldapUsePasswordResetAttribute   => '1',
+        ldapPasswordResetAttribute      => 'pwdReset',
+        ldapPasswordResetAttributeValue => 'TRUE',
+        ldapServer                      => 'localhost',
+        ldapTimeout                     => '120',
+        ldapVersion                     => '3',
+        mailCharset                     => 'utf-8',
+        mailTimeout                     => '0',
+        mailSessionKey                  => 'mail',
+        managerDn                       => '',
+        managerPassword                 => '',
+        notification                    => '0',
+        notificationStorage             => 'File',
+        notificationWildcard            => 'allusers',
+        notifyDeleted                   => '1',
+        notifyOther                     => '0',
+        openIdSreg_fullname             => 'cn',
+        openIdSreg_nickname             => 'uid',
+        openIdSreg_timezone             => '_timezone',
+        openIdSreg_email                => 'mail',
+        portal                          => 'http://auth.example.com',
+        portalSkin                      => 'pastel',
+        portalUserAttr                  => '_user',
+        portalDisplayAppslist           => '1',
         portalDisplayChangePassword => '$_auth eq "LDAP" or $_auth eq "DBI"',
         portalDisplayLogout         => '1',
         portalDisplayResetPassword  => '1',
@@ -1744,24 +1863,31 @@ sub defaultConf {
         protection                  => 'none',
         remoteGlobalStorage => 'Lemonldap::NG::Common::Apache::Session::SOAP',
         securedCookie       => '0',
-        singleSession       => '0',
-        singleIP            => '0',
-        singleUserByIP      => '0',
-        Soap                => '1',
-        SSLRequired         => '0',
-        storePassword       => '0',
-        syslog              => '',
-        timeout             => '72000',
-        timeoutActivity     => '0',
-        userControl         => '^[\w\.\-@]+$',
-        userDB              => 'LDAP',
-        passwordDB          => 'LDAP',
-        useRedirectOnError  => '1',
-        useRedirectOnForbidden => '0',
-        useXForwardedForIP     => '0',
-        vhostPort              => '-1',
-        vhostHttps             => '-1',
-        whatToTrace            => '$_whatToTrace',
+        secureTokenMemcachedServers => '127.0.0.1:11211',
+        secureTokenExpiration       => '60',
+        secureTokenAttribute        => 'uid',
+        secureTokenUrls             => '.*',
+        secureTokenHeader           => 'Auth-Token',
+        singleSession               => '0',
+        singleIP                    => '0',
+        singleUserByIP              => '0',
+        Soap                        => '1',
+        SSLRequired                 => '0',
+        storePassword               => '0',
+        syslog                      => '',
+        timeout                     => '72000',
+        timeoutActivity             => '0',
+        userControl                 => '^[\w\.\-@]+$',
+        userDB                      => 'LDAP',
+        passwordDB                  => 'LDAP',
+        useRedirectOnError          => '1',
+        useRedirectOnForbidden      => '0',
+        useSafeJail                 => '1',
+        useXForwardedForIP          => '0',
+        vhostPort                   => '-1',
+        vhostHttps                  => '-1',
+        whatToTrace                 => '$_whatToTrace',
+        yubikeyPublicIDSize         => '12',
         ########
         # SAML #
         ########
@@ -1890,6 +2016,8 @@ sub defaultConf {
         twitterAuthnLevel => 1,
         apacheAuthnLevel  => 4,
         nullAuthnLevel    => 0,
+        slaveAuthnLevel   => 2,
+        yubikeyAuthnLevel => 3,
 
     };
 }
@@ -2098,7 +2226,7 @@ sub globalTests {
             # Try authentication
             return ( 0, "SMTP authentication failed" )
               unless $smtp->auth( $conf->{SMTPAuthUser},
-                      $conf->{SMTPAuthPass} );
+                $conf->{SMTPAuthPass} );
 
             # Return
             return 1;

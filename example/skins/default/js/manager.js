@@ -24,8 +24,10 @@ var helpCh={
 	'authParams':'/pages/documentation/latest/start.html#authentication_users_and_password_databases',
 	'authProxy':'/pages/documentation/latest/authproxy.html',
 	'authRemote':'/pages/documentation/latest/authremote.html',
+	'authSlave':'/pages/documentation/latest/authslave.html',
 	'authSSL':'/pages/documentation/latest/authssl.html',
 	'authTwitter':'/pages/documentation/latest/authtwitter.html',
+	'authYubikey':'/pages/documentation/latest/authyubikey.html',
 	'cookies':'/pages/documentation/latest/ssocookie.html',
 	'customfunctions':'/pages/documentation/latest/customfunctions.html',
 	'default':'/pages/documentation/latest/start.html#configuration',
@@ -66,6 +68,7 @@ var helpCh={
 	'samlSPExportedAttributes':'/pages/documentation/latest/idpsaml.html#exported_attributes',
 	'samlSPMetaDataXML':'/pages/documentation/latest/idpsaml.html#metadata',
 	'samlSPOptions':'/pages/documentation/latest/idpsaml.html#options',
+	'securetoken':'/pages/documentation/latest/securetoken.html',
 	'security':'/pages/documentation/latest/security.html#configure_security_settings',
 	'sessions':'/pages/documentation/latest/sessions.html',
 	'sessionsdb':'/pages/documentation/latest/start.html#sessions_database',
@@ -105,6 +108,10 @@ $(document).ready(function(){
 	$('#query-switch a[alt=user]').button({icons:{primary:"ui-icon-person"}});
 	$('#query-switch a[alt=ip]').button({icons:{primary:"ui-icon-gear"}});
 	$('#query-switch a[alt=2ip]').button({icons:{primary:"ui-icon-alert"}});
+	$('#query-switch a[alt=list]').button({icons:{primary:"ui-icon-mail-closed"}});
+	$('#query-switch a[alt=listDone]').button({icons:{primary:"ui-icon-mail-open"}});
+	$('#query-switch a[alt=newNotif]').button({icons:{primary:"ui-icon-circle-plus"}});
+	$('#sendNewNotif').button({icons:{primary:"ui-icon-circle-plus"}});
 
 	/* Display/hide divs */
 	$("#buttons h1").click(function(){
@@ -158,42 +165,8 @@ $(document).ready(function(){
 	getCfgAttributes();
 	display('cfgDatas','');
 
-	/* Simple Tree */
-	simpleTreeCollection = $(".simpleTree").simpleTree({
-		autoclose:treeautoclose,
-		useClickToToggle:true,
-		drag:false,
-		afterClick:function(node){
-			var span=$('span:first',node);
-			loadHelp(span.attr('help'));
-			simpleTreeDefaultJqueryClasses();
-			simpleTreeToggleJqueryClasses();
-		},
-		afterCloseNearby:function(node){
-			simpleTreeDefaultJqueryClasses();
-			simpleTreeToggleJqueryClasses();
-		},
-		afterNewNode:function(node){
-			simpleTreeDefaultJqueryClasses();
-			simpleTreeToggleJqueryClasses();
-		},
-		afterDblClick:function(node){
-			simpleTreeDefaultJqueryClasses();
-			simpleTreeToggleJqueryClasses();
-		},
-		afterSetTrigger:function(node){
-			simpleTreeTriggerJqueryClasses();
-		},
-		afterMove:function(destination, source, pos){
-		},
-		afterAjax:function() {
-			simpleTreeDefaultJqueryClasses();
-			simpleTreeToggleJqueryClasses();
-		},
-		animate:true,
-		docToFolderConvert:true
-	});
-	if(treejquerycss){simpleTreeDefaultJqueryClasses();}
+	/* Load Simple Tree */
+	loadSimpleTree();
 
 	/* Menu CSS switch */
 	$('#css-switch').dialog({
@@ -238,6 +211,47 @@ $(document).ready(function(){
 	loadHelp('default');
 
 });
+function loadSimpleTree(){
+
+	/* Simple Tree */
+	simpleTreeCollection = $(".simpleTree").simpleTree({
+		autoclose:treeautoclose,
+		useClickToToggle:true,
+		drag:false,
+		afterClick:function(node){
+			var span=$('span:first',node);
+			loadHelp(span.attr('help'));
+			simpleTreeDefaultJqueryClasses();
+			simpleTreeToggleJqueryClasses();
+		},
+		afterCloseNearby:function(node){
+			simpleTreeDefaultJqueryClasses();
+			simpleTreeToggleJqueryClasses();
+		},
+		afterNewNode:function(node){
+			simpleTreeDefaultJqueryClasses();
+			simpleTreeToggleJqueryClasses();
+		},
+		afterDblClick:function(node){
+			simpleTreeDefaultJqueryClasses();
+			simpleTreeToggleJqueryClasses();
+		},
+		afterSetTrigger:function(node){
+			simpleTreeTriggerJqueryClasses();
+		},
+		afterMove:function(destination, source, pos){
+		},
+		afterAjax:function() {
+			simpleTreeDefaultJqueryClasses();
+			simpleTreeToggleJqueryClasses();
+		},
+		animate:true,
+		docToFolderConvert:true
+	});
+	if(treejquerycss){simpleTreeDefaultJqueryClasses();}
+
+
+}
 function simpleTreeSetMenuStyle(style){
 	if(style=="tree"){
 		$("link#cssmenu").attr("href",csspath+"tree.css");
@@ -578,6 +592,8 @@ function formateSelectAuth(id,value){
 		'SAML=SAML v2',
 		'SSL=SSL',
 		'Twitter=Twitter',
+		'Yubikey=Yubikey',
+		'Slave=Slave',
 		'Choice=Authentication choice'
 		],value);
 }
@@ -621,6 +637,7 @@ function formateSelectUser(id,value){
 		'OpenID=OpenID',
 		'Proxy=Proxy',
 		'Remote=Remote',
+		'Slave=Slave',
 		'SAML=SAML v2'
 		],value);
 }
@@ -1073,14 +1090,29 @@ function uploadConf(f){
 					}
 				}
 				else{
-					var tmp=lmtext('li_cm9vdA2');
-					tmp=tmp.replace(/\d+/,data.result.cfgNum);
-					setlmtext('li_cm9vdA2',tmp);
-					setlmdata('li_cm9vdA2',data.result.cfgNum);
-					$('#cfgNum').text(data.result.cfgNum);
+					// Update configuration attributes
+					var cfgNum = data.result.cfgNum;
+					$('#cfgNum').text(cfgNum);
 					setCfgAttributes(data.cfgDatas);
 					cfgAttrDone++;
-					display('cfgDatas','');
+
+					// Reload menu
+					$.ajax({
+						type:"POST",
+						url:scriptname,
+						data:{menu:cfgNum},
+						dataType:'html',
+						success:function(data){
+							if(data==null){networkPb()}
+							else{
+								$("div#menu").html(data);
+								loadSimpleTree();
+								display('cfgDatas','');
+							}
+						}
+					});
+
+
 				}
 				if(typeof(data.warnings)!='undefined'){
 					c+='<h4>Warnings</h4>';
