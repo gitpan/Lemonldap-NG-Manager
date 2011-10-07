@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.1.2';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -640,8 +640,12 @@ sub struct {
                     issuerDBCASRule =>
                       'text:/issuerDBCASRule:issuerdbCAS:boolOrPerlExpr',
                     issuerDBCASOptions => {
-                        _nodes => [qw(casAttr casStorage cn:casStorageOptions)],
-                        casAttr           => 'text:/casAttr',
+                        _nodes => [
+                            qw(casAttr casAccessControlPolicy casStorage cn:casStorageOptions)
+                        ],
+                        casAttr => 'text:/casAttr',
+                        casAccessControlPolicy =>
+'select:/casAccessControlPolicy:issuerdbCAS:casAccessControlPolicyParams',
                         casStorage        => 'text:/casStorage',
                         casStorageOptions => {
                             _nodes =>
@@ -698,14 +702,16 @@ sub struct {
 
             # COOKIE PARAMETERS
             cookieParams => {
-                _nodes =>
-                  [qw(cookieName domain cda securedCookie cookieExpiration)],
+                _nodes => [
+                    qw(cookieName domain cda securedCookie httpOnly cookieExpiration)
+                ],
                 _help      => 'cookies',
                 cookieName => 'text:/cookieName',
                 domain     => 'text:/domain',
                 cda        => 'bool:/cda',
                 securedCookie =>
                   'select:/securedCookie:cookies:securedCookieValues',
+                httpOnly         => 'bool:/httpOnly',
                 cookieExpiration => 'text:/cookieExpiration',
             },
 
@@ -879,7 +885,7 @@ sub struct {
                     # Secure Token
                     secureTokenHandler => {
                         _nodes => [
-                            qw(secureTokenMemcachedServers secureTokenExpiration secureTokenAttribute secureTokenUrls secureTokenHeader)
+                            qw(secureTokenMemcachedServers secureTokenExpiration secureTokenAttribute secureTokenUrls secureTokenHeader secureTokenAllowOnError)
                         ],
                         _help => 'securetoken',
                         secureTokenMemcachedServers =>
@@ -888,6 +894,8 @@ sub struct {
                         secureTokenAttribute  => 'text:secureTokenAttribute',
                         secureTokenUrls       => 'text:/secureTokenUrls',
                         secureTokenHeader     => 'text:/secureTokenHeader',
+                        secureTokenAllowOnError =>
+                          'bool:/secureTokenAllowOnError',
                     },
                 },
 
@@ -1338,6 +1346,7 @@ sub testStruct {
                 1;
             },
         },
+        httpOnly               => $boolean,
         https                  => $boolean,
         issuerDBSAMLActivation => $boolean,
         issuerDBSAMLPath       => $testNotDefined,
@@ -1694,8 +1703,9 @@ sub testStruct {
             keyTest    => qr/^\w+$/,
             keyMsgFail => 'Bad CAS proxied service identifier',
         },
-        casAttr    => $testNotDefined,
-        casStorage => {
+        casAttr                => $testNotDefined,
+        casAccessControlPolicy => $testNotDefined,
+        casStorage             => {
             test    => qr/^[\w:]*$/,
             msgFail => 'Bad module name',
         },
@@ -1799,6 +1809,7 @@ sub testStruct {
         secureTokenAttribute        => $testNotDefined,
         secureTokenUrls             => $testNotDefined,
         secureTokenHeader           => $testNotDefined,
+        secureTokenAllowOnError     => $boolean,
     };
 }
 
@@ -1813,11 +1824,13 @@ sub defaultConf {
         authentication           => 'LDAP',
         authChoiceParam          => 'lmAuth',
         CAS_pgtFile              => '/tmp/pgt.txt',
+        casAccessControlPolicy   => 'none',
         cda                      => '0',
         cookieName               => 'lemonldap',
         domain                   => 'example.com',
         globalStorage            => 'Apache::Session::File',
         hideOldPassword          => '0',
+        httpOnly                 => '1',
         https                    => '0',
         issuerDBSAMLActivation   => '0',
         issuerDBSAMLPath         => '^/saml/',
@@ -1868,6 +1881,7 @@ sub defaultConf {
         secureTokenAttribute        => 'uid',
         secureTokenUrls             => '.*',
         secureTokenHeader           => 'Auth-Token',
+        secureTokenAllowOnError     => '1',
         singleSession               => '0',
         singleIP                    => '0',
         singleUserByIP              => '0',
