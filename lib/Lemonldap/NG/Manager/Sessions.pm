@@ -12,7 +12,6 @@
 package Lemonldap::NG::Manager::Sessions;
 
 use strict;
-use File::Basename;
 use Lemonldap::NG::Handler::CGI qw(:globalStorage :locationRules);
 use Lemonldap::NG::Common::Apache::Session;   #inherits
 use Lemonldap::NG::Common::Conf;              #link protected conf Configuration
@@ -81,10 +80,6 @@ sub new {
 
     # Multi values separator
     $self->{multiValuesSeparator} ||= '; ';
-
-    # Absolute path to the htdocs directory where is manager script.
-    my ( $mname, $mpath, $msuffix ) = fileparse( $ENV{SCRIPT_FILENAME} );
-    $self->{managerHtdocsPath} = $mpath;
 
     # Now we're ready to display sessions. Choose display type
     foreach my $k ( $self->param() ) {
@@ -587,6 +582,45 @@ sub session {
         $res .= '</div>';
     }
 
+    # Login history
+    if ( defined $session{loginHistory} ) {
+        $res .= '<div class="ui-corner-all ui-widget-content category">';
+        $res .= '<h2 class="ui-corner-all ui-widget-header">'
+          . ucfirst $self->translate('loginHistory') . '</h2>';
+        $res .= '<ul>';
+
+        # Get all login records
+        my $loginRecords = {};
+
+        if ( defined $session{loginHistory}->{successLogin} ) {
+            foreach ( @{ $session{loginHistory}->{successLogin} } ) {
+                $loginRecords->{ $_->{_utime} } =
+                  "Success (IP " . $_->{ipAddr} . ")";
+            }
+        }
+
+        if ( defined $session{loginHistory}->{failedLogin} ) {
+            foreach ( @{ $session{loginHistory}->{failedLogin} } ) {
+                $loginRecords->{ $_->{_utime} } =
+                  $_->{error} . " (IP " . $_->{ipAddr} . ")";
+            }
+        }
+
+        # Display records sorted by date
+        foreach my $utime ( sort keys %{$loginRecords} ) {
+
+            $res .=
+                "<li><strong>"
+              . localtime($utime)
+              . "</strong>: "
+              . $loginRecords->{$utime} . "</li>";
+        }
+
+        delete $session{loginHistory};
+        $res .= '</ul>';
+        $res .= '</div>';
+    }
+
     # Other attributes
     $res .= '<div class="ui-corner-all ui-widget-content category">';
     $res .= '<h2 class="ui-corner-all ui-widget-header">'
@@ -839,7 +873,7 @@ sessions
   our $cgi ||= Lemonldap::NG::Manager::Sessions->new({
         localStorage        => "Cache::FileCache",
         localStorageOptions => {
-            'namespace'          => 'MyNamespace',
+            'namespace'          => 'lemonldap-ng',
             'default_expires_in' => 600,
             'directory_umask'    => '007',
             'cache_root'         => '/tmp',

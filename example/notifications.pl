@@ -25,13 +25,15 @@ my $cgi = Lemonldap::NG::Manager::Notifications->new(
         #      directory => '/usr/local/lemonlda-ng/conf/'
         #},
     }
-) or Lemonldap::NG::Common::CGI->abort('Unable to start notifications explorer');
+  )
+  or
+  Lemonldap::NG::Common::CGI->abort('Unable to start notifications explorer');
 
 my $skin = $cgi->{managerSkin} or $cgi->abort('managerSkin is not defined');
 my $css = 'tree.css';
 my $css_theme = 'ui-lightness';
 my $skin_dir  = 'skins';
-my $main_dir  = $cgi->{managerHtdocsPath};
+my $main_dir  = $cgi->getApacheHtdocsPath;
 
 my $template = HTML::Template->new(
     filename          => "$main_dir/$skin_dir/$skin/notifications.tpl",

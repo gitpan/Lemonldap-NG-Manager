@@ -6,17 +6,17 @@ use Data::Dumper;
 use POSIX;
 use strict;
 
+eval {
+    POSIX::setgid( ( getgrnam('__APACHEGROUP__') )[2] );
+    POSIX::setuid( ( getpwnam('__APACHEUSER__') )[2] );
+    print STDERR "Running as uid $> and gid $)\n";
+};
+
 our $refFile  = `mktemp`;
 our $editFile = `mktemp`;
 
 chomp $refFile;
 chomp $editFile;
-
-eval {
-    POSIX::setgid( ( getgrnam('__APACHEUSER__') )[2] );
-    POSIX::setuid( ( getpwnam('__APACHEGROUP__') )[2] );
-    print STDERR "Running as $>\n";
-};
 
 if ( $> == 0 ) {
     print STDERR
@@ -28,11 +28,19 @@ if ( $> == 0 ) {
 
 my $conf = Lemonldap::NG::Common::Conf->new();
 
+unless ($conf) {
+    print STDERR $Lemonldap::NG::Common::Conf::msg;
+    exit 1;
+}
+
 open F1, ">$refFile"  or quit($!);
 open F2, ">$editFile" or quit($!);
 my $tmp = $conf->getConf();
 delete $tmp->{reVHosts};
 delete $tmp->{cipher};
+delete $tmp->{cfgAuthor};
+delete $tmp->{cfgAuthorIP};
+delete $tmp->{cfgDate};
 $tmp = Dumper($tmp);
 print F1 $tmp;
 print F2 $tmp;
@@ -44,12 +52,21 @@ system "editor $editFile";
 if (`diff $refFile $editFile`) {
     my $VAR1;
     my $buf;
+
+    # Check if the new configuration hash is valid
     open F1, $editFile;
     while (<F1>) {
         $buf .= $_;
     }
     eval $buf;
     quit($@) if ($@);
+
+    # Update author and date
+    $VAR1->{cfgAuthor}   = "lmConfigEditor";
+    $VAR1->{cfgAuthorIP} = "localhost";
+    $VAR1->{cfgDate}     = time();
+
+    # Store new configuration
     my $res = $conf->saveConf($VAR1);
     if ( $res > 0 ) {
         print STDERR "Configuration $res saved\n";

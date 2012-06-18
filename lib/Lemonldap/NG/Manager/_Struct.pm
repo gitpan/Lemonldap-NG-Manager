@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '1.1.2';
+our $VERSION = '1.2.0';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -48,10 +48,12 @@ sub cstruct {
                         _help  => 'post',
                     },
                     vhostOptions => {
-                        _nodes     => [qw(vhostPort vhostHttps)],
+                        _nodes => [qw(vhostPort vhostHttps vhostMaintenance)],
                         vhostPort  => "int:/vhostOptions/$k2/vhostPort",
                         vhostHttps => "trool:/vhostOptions/$k2/vhostHttps",
-                        _help      => 'vhostOptions',
+                        vhostMaintenance =>
+                          "bool:/vhostOptions/$k2/vhostMaintenance",
+                        _help => 'vhostOptions',
                     },
                 }
             }
@@ -251,7 +253,7 @@ sub struct {
         ######################
         generalParameters => {
             _nodes => [
-                qw(n:portalParams n:authParams n:issuerParams n:logParams n:cookieParams n:sessionParams n:advancedParams)
+                qw(n:portalParams n:authParams n:issuerParams n:logParams n:cookieParams n:sessionParams cn:reloadUrls n:advancedParams)
             ],
             _help => 'default',
 
@@ -267,7 +269,7 @@ sub struct {
                     _help         => 'menu',
                     portalModules => {
                         _nodes => [
-                            qw(portalDisplayLogout portalDisplayChangePassword portalDisplayAppslist)
+                            qw(portalDisplayLogout portalDisplayChangePassword portalDisplayAppslist portalDisplayLoginHistory)
                         ],
                         portalDisplayLogout =>
                           'text:/portalDisplayLogout:menu:boolOrPerlExpr',
@@ -275,6 +277,8 @@ sub struct {
 'text:/portalDisplayChangePassword:menu:boolOrPerlExpr',
                         portalDisplayAppslist =>
                           'text:/portalDisplayAppslist:menu:boolOrPerlExpr',
+                        portalDisplayLoginHistory =>
+                          'text:/portalDisplayLoginHistory:menu:boolOrPerlExpr',
                     },
                     applicationList => {
                         _nodes => [
@@ -287,25 +291,34 @@ sub struct {
 
                 portalCustomization => {
                     _nodes => [
-                        qw(portalSkin portalDisplayResetPassword portalAutocomplete portalRequireOldPassword hideOldPassword portalUserAttr portalOpenLinkInNewWindow portalAntiFrame)
+                        qw(portalSkin portalAutocomplete portalCheckLogins portalUserAttr portalOpenLinkInNewWindow portalAntiFrame passwordManagement)
                     ],
                     _help => 'portalcustom',
 
                     portalSkin => 'text:/portalSkin:portalcustom:skinSelect',
-                    portalDisplayResetPassword =>
-                      'bool:/portalDisplayResetPassword',
                     portalAutocomplete => 'bool:/portalAutocomplete',
-                    portalRequireOldPassword =>
-                      'bool:/portalRequireOldPassword',
-                    hideOldPassword => 'bool:/hideOldPassword',
-                    portalUserAttr  => 'text:/portalUserAttr',
+                    portalCheckLogins  => 'bool:/portalCheckLogins',
+                    portalUserAttr     => 'text:/portalUserAttr',
                     portalOpenLinkInNewWindow =>
                       'bool:/portalOpenLinkInNewWindow',
                     portalAntiFrame => 'bool:/portalAntiFrame',
+
+                    passwordManagement => {
+                        _nodes => [
+                            qw(portalDisplayResetPassword portalRequireOldPassword hideOldPassword mailOnPasswordChange)
+                        ],
+
+                        portalDisplayResetPassword =>
+                          'bool:/portalDisplayResetPassword',
+                        portalRequireOldPassword =>
+                          'bool:/portalRequireOldPassword',
+                        hideOldPassword      => 'bool:/hideOldPassword',
+                        mailOnPasswordChange => 'bool:/mailOnPasswordChange',
+                    },
                 },
             },
 
-            # AUTHENTICATION / USERDB / PASWWORDDB PARAMETERS
+            # AUTHENTICATION / USERDB / PASSWORDDB PARAMETERS
             authParams => {
 
                # Displayed nodes depend on authentication/userDB modules choosed
@@ -335,6 +348,7 @@ sub struct {
                             ldap    => ['ldapParams'],
                             ssl     => [qw(ldapParams sslParams)],
                             cas     => ['casParams'],
+                            radius  => ['radiusParams'],
                             remote  => ['remoteParams'],
                             proxy   => ['proxyParams'],
                             openid  => ['openIdParams'],
@@ -344,10 +358,10 @@ sub struct {
                             null    => ['nullParams'],
                             slave   => ['slaveParams'],
                             choice  => [
-                                qw(ldapParams sslParams casParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams)
+                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams)
                             ],
                             multi => [
-                                qw(ldapParams sslParams casParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams)
+                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams)
                             ],
                             yubikey => ['yubikeyParams'],
                         }->{$mod};
@@ -444,12 +458,10 @@ sub struct {
                 # SSL
                 sslParams => {
                     _nodes =>
-                      [qw(SSLAuthnLevel SSLVar SSLLDAPField SSLRequire)],
+                      [qw(SSLAuthnLevel SSLVar)],
                     _help         => 'authSSL',
                     SSLAuthnLevel => 'int:/SSLAuthnLevel',
                     SSLVar        => 'text:/SSLVar',
-                    SSLLDAPField  => 'text:/SSLLDAPField',
-                    SSLRequire    => 'bool:/SSLRequire',
                 },
 
                 # CAS
@@ -470,6 +482,15 @@ sub struct {
                         _help  => 'authCAS',
                     },
 
+                },
+
+                # Radius
+                radiusParams => {
+                    _nodes => [qw(radiusAuthnLevel radiusSecret radiusServer)],
+                    _help  => 'authRadius',
+                    radiusAuthnLevel => 'int:/radiusAuthnLevel',
+                    radiusSecret     => 'text:/radiusSecret',
+                    radiusServer     => 'text:/radiusServer',
                 },
 
                 # Remote
@@ -583,10 +604,12 @@ sub struct {
 
                 # Slave
                 slaveParams => {
-                    _nodes          => [qw(slaveAuthnLevel slaveUserHeader)],
+                    _nodes =>
+                      [qw(slaveAuthnLevel slaveUserHeader slaveMasterIP)],
                     _help           => 'authSlave',
                     slaveAuthnLevel => 'int:/slaveAuthnLevel',
                     slaveUserHeader => 'text:/slaveUserHeader',
+                    slaveMasterIP   => 'text:/slaveMasterIP',
                 },
 
                 # Choice
@@ -718,15 +741,21 @@ sub struct {
             # SESSIONS PARAMETERS
             sessionParams => {
                 _nodes => [
-                    qw(grantSessionRule storePassword timeout timeoutActivity n:sessionStorage n:multipleSessions n:persistentSessions)
+                    qw(storePassword timeout timeoutActivity cn:grantSessionRules n:sessionStorage n:multipleSessions n:persistentSessions)
                 ],
                 _help => 'sessions',
 
-                grantSessionRule => 'textarea:/grantSessionRule',
-                storePassword    => 'bool:/storePassword',
-                timeout          => 'int:/timeout',
+                storePassword => 'bool:/storePassword',
+                timeout       => 'int:/timeout',
                 timeoutActivity =>
                   'text:/timeoutActivity:sessions:timeoutActivityParams',
+
+                grantSessionRules => {
+                    _nodes => [
+'hash:/grantSessionRules:grantSessionRules:grantSessionRules'
+                    ],
+                    _js => 'grantSessionRulesRoot',
+                },
 
                 sessionStorage => {
                     _nodes => [qw(globalStorage cn:globalStorageOptions)],
@@ -766,10 +795,17 @@ sub struct {
 
             },
 
+            # RELOAD URLS
+            reloadUrls => {
+                _nodes => ['hash:/reloadUrls:reloadUrls:btext'],
+                _js    => 'hashRoot',
+                _help  => 'reloadUrls',
+            },
+
             # OTHER PARAMETERS
             advancedParams => {
                 _nodes => [
-                    qw(customFunctions n:soap n:notifications n:passwordManagement n:security n:redirection n:specialHandlers cn:logoutServices)
+                    qw(customFunctions n:soap n:loginHistory n:notifications n:passwordManagement n:security n:redirection n:portalRedirection n:specialHandlers cn:logoutServices)
                 ],
                 _help => 'advanced',
 
@@ -779,6 +815,21 @@ sub struct {
                     _nodes       => [qw(Soap exportedAttr)],
                     Soap         => 'bool:/Soap',
                     exportedAttr => 'text:/exportedAttr',
+                },
+
+                loginHistory => {
+                    _nodes => [
+                        qw(loginHistoryEnabled successLoginNumber failedLoginNumber cn:sessionDataToRemember)
+                    ],
+                    _help                 => 'loginHistory',
+                    loginHistoryEnabled   => 'bool:/loginHistoryEnabled',
+                    successLoginNumber    => 'int:/successLoginNumber',
+                    failedLoginNumber     => 'int:/failedLoginNumber',
+                    sessionDataToRemember => {
+                        _nodes =>
+                          ['hash:/sessionDataToRemember:loginHistory:btext'],
+                        _js => 'hashRoot',
+                    },
                 },
 
                 notifications => {
@@ -836,7 +887,7 @@ sub struct {
 
                 security => {
                     _nodes => [
-                        qw(userControl portalForceAuthn key trustedDomains useSafeJail)
+                        qw(userControl portalForceAuthn key trustedDomains useSafeJail checkXSS)
                     ],
                     _help            => 'security',
                     userControl      => 'text:/userControl',
@@ -844,17 +895,26 @@ sub struct {
                     key              => 'text:/key',
                     trustedDomains   => 'text:/trustedDomains',
                     useSafeJail      => 'bool:/useSafeJail',
+                    checkXSS         => 'bool:/checkXSS',
                 },
 
                 redirection => {
                     _nodes => [
-                        qw(https port useRedirectOnForbidden useRedirectOnError)
+                        qw(https port useRedirectOnForbidden useRedirectOnError maintenance)
                     ],
                     _help                  => 'redirections',
                     https                  => 'bool:/https',
                     port                   => 'int:/port',
                     useRedirectOnForbidden => 'bool:/useRedirectOnForbidden',
                     useRedirectOnError     => 'bool:/useRedirectOnError',
+                    maintenance            => 'bool:/maintenance',
+                },
+
+                portalRedirection => {
+                    _nodes => [qw(jsRedirect)],
+                    _help  => 'portalRedirections',
+                    jsRedirect =>
+                      'text:/jsRedirect:portalRedirections:boolOrPerlExpr',
                 },
 
                 specialHandlers => {
@@ -1224,10 +1284,8 @@ sub struct {
 # Returns the tests to do with the datas uploaded.
 # @return hashref
 sub testStruct {
-    my $safe       = Safe->new();
-    my $assignTest = qr/(?<=[^=<!>\|\?])=(?![=~])/;
-    my $assignMsg  = 'containsAnAssignment';
-    my $perlExpr   = sub {
+    my $safe     = Safe->new();
+    my $perlExpr = sub {
         my $e = shift;
         $safe->reval( $e, 1 );
         return 1 unless ($@);
@@ -1238,6 +1296,11 @@ sub testStruct {
           if ( $@ =~ /Bareword "(.*?)" not allowed while "strict subs"/ );
         return ( 0, $@ );
     };
+    my $noAssign = sub {
+        my $e          = shift;
+        my $assignTest = qr/(?<=[^=<!>\|\?])=(?![=~])/;
+        return $e =~ $assignTest ? ( 0, "contains an assignment" ) : 1;
+    };
     my $boolean = { test => qr/^(?:0|1)?$/, msgFail => 'Value must be 0 or 1' };
     my $integer =
       { test => qr/^(?:\d)+$/, msgFail => 'Value must be an integer' };
@@ -1246,6 +1309,13 @@ sub testStruct {
         my $q;
         eval { $q = qr/$r/ };
         return ( $@ ? ( 0, $@ ) : 1 );
+    };
+    my $domainNameOrIp = sub {
+        my $n = shift;
+        return
+             $n =~ /^(\d{1,3}\.){3}\d{1,3}$/
+          || $n =~ Lemonldap::NG::Common::Regexp::HOSTNAME()
+          || ( 0, 'Bad server name or IP' );
     };
     my $testNotDefined = { test => sub { 1 }, msgFail => 'Ok' };
     my $lmAttrOrMacro = {
@@ -1291,6 +1361,7 @@ sub testStruct {
             msgFail => 'Bad module name',
         },
         cda        => $boolean,
+        checkXSS   => $boolean,
         cookieName => {
             test    => qr/^[a-zA-Z]\w*$/,
             msgFail => 'Bad cookie name',
@@ -1307,11 +1378,7 @@ sub testStruct {
                 keyTest    => qr/^\w([\w\-]*\w)?$/,
                 keyMsgFail => 'Bad header name',
                 test       => $perlExpr,
-                warnTest   => sub {
-                    my $e = shift;
-                    return ( 0, $assignMsg ) if ( $e =~ $assignTest );
-                    1;
-                },
+                warnTest   => $noAssign,
             },
         },
         exportedVars => {
@@ -1320,7 +1387,8 @@ sub testStruct {
             test       => qr/^[a-zA-Z][\w-]*$/,
             msgFail    => 'Bad attribute name',
         },
-        globalStorage => {
+        failedLoginNumber => $integer,
+        globalStorage     => {
             test    => qr/^[\w:]+$/,
             msgFail => 'Bad module name',
         },
@@ -1328,23 +1396,15 @@ sub testStruct {
             keyTest    => qr/^\w+$/,
             keyMsgFail => 'Bad parameter',
         },
-        grantSessionRule => {
-            test     => $perlExpr,
-            warnTest => sub {
-                my $e = shift;
-                return ( 0, $assignMsg ) if ( $e =~ $assignTest );
-                1;
-            },
+        grantSessionRules => {
+            keyTest     => $perlExpr,
+            warnKeyTest => $noAssign,
         },
         groups => {
             keyTest    => qr/^\w[\w-]*$/,
             keyMsgFail => 'Bad group name',
             test       => $perlExpr,
-            warnTest   => sub {
-                my $e = shift;
-                return ( 0, $assignMsg ) if ( $e =~ $assignTest );
-                1;
-            },
+            warnTest   => $noAssign,
         },
         httpOnly               => $boolean,
         https                  => $boolean,
@@ -1352,32 +1412,21 @@ sub testStruct {
         issuerDBSAMLPath       => $testNotDefined,
         issuerDBSAMLRule       => {
             test     => $perlExpr,
-            warnTest => sub {
-                my $e = shift;
-                return ( 0, $assignMsg ) if ( $e =~ $assignTest );
-                1;
-            },
+            warnTest => $noAssign,
         },
         issuerDBCASActivation => $boolean,
         issuerDBCASPath       => $testNotDefined,
         issuerDBCASRule       => {
             test     => $perlExpr,
-            warnTest => sub {
-                my $e = shift;
-                return ( 0, $assignMsg ) if ( $e =~ $assignTest );
-                1;
-            },
+            warnTest => $noAssign,
         },
         issuerDBOpenIDActivation => $boolean,
         issuerDBOpenIDPath       => $testNotDefined,
         issuerDBOpenIDRule       => {
             test     => $perlExpr,
-            warnTest => sub {
-                my $e = shift;
-                return ( 0, $assignMsg ) if ( $e =~ $assignTest );
-                1;
-            },
+            warnTest => $noAssign,
         },
+        jsRedirect     => { test => $perlExpr, },
         key            => $testNotDefined,
         ldapAuthnLevel => $integer,
         ldapBase       => {
@@ -1430,7 +1479,7 @@ sub testStruct {
                 keyTest => $pcre,
                 test    => sub {
                     my $e = shift;
-                    return 1 if ( $e =~ /^(?:accept|deny|unprotect)$/i );
+                    return 1 if ( $e =~ /^(?:accept|deny|unprotect|skip)$/i );
                     if ( $e =~ s/^logout(?:_(?:app_sso|app|sso))?\s*// ) {
                         return (
                             $e eq ''
@@ -1441,14 +1490,11 @@ sub testStruct {
                     }
                     return &$perlExpr($e);
                 },
-                warnTest => sub {
-                    my $e = shift;
-                    return ( 0, $assignMsg ) if ( $e =~ $assignTest );
-                    1;
-                },
+                warnTest => $noAssign,
             },
         },
-        logoutServices => {
+        loginHistoryEnabled => $boolean,
+        logoutServices      => {
             keyTest    => qr/^\w+$/,
             keyMsgFail => 'Bad name',
         },
@@ -1456,13 +1502,11 @@ sub testStruct {
             keyTest    => qr/^[_a-zA-Z]\w*$/,
             keyMsgFail => 'Bad macro name',
             test       => $perlExpr,
-            warnTest   => sub {
-                my $e = shift;
-                return ( 0, $assignMsg ) if ( $e =~ $assignTest );
-                1;
-            },
+            warnTest   => $noAssign,
         },
-        managerDn => {
+        mailOnPasswordChange => $boolean,
+        maintenance          => $boolean,
+        managerDn            => {
             test    => qr/^(?:\w+=.*)?$/,
             msgFail => 'Bad LDAP dn',
         },
@@ -1494,6 +1538,8 @@ sub testStruct {
             msgFail => 'Bad portal value',
         },
         portalAutocomplete          => $boolean,
+        portalCheckLogins           => $boolean,
+        portalDisplayLoginHistory   => { test => $perlExpr, },
         portalDisplayAppslist       => { test => $perlExpr, },
         portalDisplayChangePassword => { test => $perlExpr, },
         portalDisplayLogout         => { test => $perlExpr, },
@@ -1521,16 +1567,31 @@ sub testStruct {
             keyTest => qr/^(?:none|authentificate|manager|)$/,
             msgFail => 'must be one of none authentificate manager',
         },
+        reloadUrls => {
+            keyTest => $domainNameOrIp,
+            test    => Lemonldap::NG::Common::Regexp::HTTP_URI(),
+            msgFail => 'Bad url'
+        },
         securedCookie => {
-            test    => qr/^(?:0|1|2)$/,
-            msgFail => 'securedCookie must be 0, 1 or 2',
+            test    => qr/^(?:0|1|2|3)$/,
+            msgFail => 'securedCookie must be 0, 1, 2 or 3',
+        },
+        sessionDataToRemember => {
+            keyTest    => qr/^[\w-]+$/,
+            keyMsgFail => 'Invalid session data',
         },
         singleSession  => $boolean,
         singleIP       => $boolean,
         singleUserByIP => $boolean,
-        Soap           => $boolean,
-        storePassword  => $boolean,
-        syslog         => {
+        slaveMasterIP  => {
+            test =>
+              qr/^(\s*((\d{1,3}\.){3}\d{1,3}\s+)*(\d{1,3}\.){3}\d{1,3})?\s*$/,
+            msgFail => 'Bad parameter "master\'s IP" in Slave',
+        },
+        Soap               => $boolean,
+        storePassword      => $boolean,
+        successLoginNumber => $integer,
+        syslog             => {
             test => qw/^(?:auth|authpriv|daemon|local\d|user)?$/,
             msgFail =>
               'Only auth|authpriv|daemon|local0-7|user is allowed here',
@@ -1560,7 +1621,7 @@ sub testStruct {
             keyTest    => Lemonldap::NG::Common::Regexp::HOSTNAME(),
             keyMsgFail => 'Bad virtual host name',
             '*'        => {
-                keyTest    => qr/^vhost(Port|Https)$/,
+                keyTest    => qr/^vhost(Port|Https|Maintenance)$/,
                 keyMsgFail => 'Bad option name',
             },
         },
@@ -1686,8 +1747,6 @@ sub testStruct {
         # SSL
         SSLAuthnLevel => $integer,
         SSLVar        => $testNotDefined,
-        SSLLDAPField  => $testNotDefined,
-        SSLRequire    => $boolean,
 
         # CAS
         CAS_authnLevel => $integer,
@@ -1713,6 +1772,11 @@ sub testStruct {
             keyTest    => qr/^\w+$/,
             keyMsgFail => 'Bad parameter',
         },
+
+        # Radius
+        radiusAuthnLevel => $integer,
+        radiusSecret     => $testNotDefined,
+        radiusServer     => $testNotDefined,
 
         # Remote
         remotePortal        => $testNotDefined,
@@ -1826,8 +1890,10 @@ sub defaultConf {
         CAS_pgtFile              => '/tmp/pgt.txt',
         casAccessControlPolicy   => 'none',
         cda                      => '0',
+        checkXSS                 => '1',
         cookieName               => 'lemonldap',
         domain                   => 'example.com',
+        failedLoginNumber        => '5',
         globalStorage            => 'Apache::Session::File',
         hideOldPassword          => '0',
         httpOnly                 => '1',
@@ -1841,6 +1907,7 @@ sub defaultConf {
         issuerDBOpenIDActivation => '0',
         issuerDBOpenIDPath       => '^/openidserver/',
         issuerDBOpenIDRule       => '1',
+        jsRedirect               => '0',
         key      => join( '', map { chr( int( rand(94) ) + 33 ) } ( 1 .. 16 ) ),
         ldapBase => 'dc=example,dc=com',
         ldapPort => '389',
@@ -1852,6 +1919,8 @@ sub defaultConf {
         ldapTimeout                     => '120',
         ldapVersion                     => '3',
         mailCharset                     => 'utf-8',
+        mailOnPasswordChange            => '0',
+        maintenance                     => '0',
         mailTimeout                     => '0',
         mailSessionKey                  => 'mail',
         managerDn                       => '',
@@ -1868,12 +1937,15 @@ sub defaultConf {
         portal                          => 'http://auth.example.com',
         portalSkin                      => 'pastel',
         portalUserAttr                  => '_user',
+        portalCheckLogins               => '1',
+        portalDisplayLoginHistory       => '1',
         portalDisplayAppslist           => '1',
         portalDisplayChangePassword => '$_auth eq "LDAP" or $_auth eq "DBI"',
         portalDisplayLogout         => '1',
         portalDisplayResetPassword  => '1',
         portalAntiFrame             => '1',
         protection                  => 'none',
+        radiusAuthnLevel            => '3',
         remoteGlobalStorage => 'Lemonldap::NG::Common::Apache::Session::SOAP',
         securedCookie       => '0',
         secureTokenMemcachedServers => '127.0.0.1:11211',
@@ -1886,8 +1958,8 @@ sub defaultConf {
         singleIP                    => '0',
         singleUserByIP              => '0',
         Soap                        => '1',
-        SSLRequired                 => '0',
         storePassword               => '0',
+        successLoginNumber          => '5',
         syslog                      => '',
         timeout                     => '72000',
         timeoutActivity             => '0',
@@ -1900,6 +1972,7 @@ sub defaultConf {
         useXForwardedForIP          => '0',
         vhostPort                   => '-1',
         vhostHttps                  => '-1',
+        vhostMaintenance            => '0',
         whatToTrace                 => '$_whatToTrace',
         yubikeyPublicIDSize         => '12',
         ########
@@ -2113,6 +2186,21 @@ sub globalTests {
             );
         },
 
+        # Check if virtual host do not contain a port
+        vhostWithPort => sub {
+            my @pb;
+            foreach my $vh ( keys %{ $conf->{locationRules} } ) {
+                push @pb, $vh if ( $vh =~ /:/ );
+            }
+            if (@pb) {
+                return ( 0,
+                        'Virtual hosts '
+                      . join( ', ', @pb )
+                      . " contain a port, this is not allowed" );
+            }
+            else { return 1; }
+        },
+
         # Check if "userDB" and "authentication" are consistent
         authAndUserDBConsistency => sub {
             foreach my $type (qw(OpenID SAML)) {
@@ -2235,7 +2323,8 @@ sub globalTests {
               unless ($smtp);
 
             # Skip other tests if no authentication
-            return 1 unless ( $conf->{SMTPAuthUser} and $conf->{SMTPAuthPass} );
+            return 1
+              unless ( $conf->{SMTPAuthUser} and $conf->{SMTPAuthPass} );
 
             # Try authentication
             return ( 0, "SMTP authentication failed" )

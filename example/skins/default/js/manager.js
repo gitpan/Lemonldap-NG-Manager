@@ -4,79 +4,82 @@
 
 /* Help chapters */
 var helpCh={
-	'advanced':'/pages/documentation/latest/start.html#advanced_features',
-	'authApache':'/pages/documentation/latest/authapache.html',
-	'authDBI':'/pages/documentation/latest/authdbi.html',
-	'authDBIConnection':'/pages/documentation/latest/authdbi.html#connection',
-	'authDBILevel':'/pages/documentation/latest/authdbi.html#authentication_level',
-	'authDBIPassword':'/pages/documentation/latest/authdbi.html#password',
-	'authDBISchema':'/pages/documentation/latest/authdbi.html#schema',
-	'authCAS':'/pages/documentation/latest/authcas.html',
-	'authChoice':'/pages/documentation/latest/authchoice.html',
-	'authLDAP':'/pages/documentation/latest/authldap.html',
-	'authLDAPConnection':'/pages/documentation/latest/authldap.html#connection',
-	'authLDAPFilters':'/pages/documentation/latest/authldap.html#filters',
-	'authLDAPGroups':'/pages/documentation/latest/authldap.html#groups',
-	'authLDAPLevel':'/pages/documentation/latest/authldap.html#authentication_level',
-	'authLDAPPassword':'/pages/documentation/latest/authldap.html#password',
-	'authNull':'/pages/documentation/latest/authnull.html',
-	'authOpenID':'/pages/documentation/latest/authopenid.html',
-	'authParams':'/pages/documentation/latest/start.html#authentication_users_and_password_databases',
-	'authProxy':'/pages/documentation/latest/authproxy.html',
-	'authRemote':'/pages/documentation/latest/authremote.html',
-	'authSlave':'/pages/documentation/latest/authslave.html',
-	'authSSL':'/pages/documentation/latest/authssl.html',
-	'authTwitter':'/pages/documentation/latest/authtwitter.html',
-	'authYubikey':'/pages/documentation/latest/authyubikey.html',
-	'cookies':'/pages/documentation/latest/ssocookie.html',
-	'customfunctions':'/pages/documentation/latest/customfunctions.html',
-	'default':'/pages/documentation/latest/start.html#configuration',
-	'exportedVars':'/pages/documentation/latest/exportedvars.html',
-	'headers':'/pages/documentation/latest/writingrulesand_headers.html#headers',
-	'issuerdb':'/pages/documentation/latest/start.html#identity_provider',
-	'issuerdbCAS':'/pages/documentation/latest/idpcas.html',
-	'issuerdbOpenID':'/pages/documentation/latest/idpopenid.html',
-	'issuerdbSAML':'/pages/documentation/latest/idpsaml.html',
-	'logoutforward':'/pages/documentation/latest/logoutforward.html',
-	'logs':'/pages/documentation/latest/logs.html',
-	'macrosandgroups':'/pages/documentation/latest/exportedvars.html#extend_variables_using_macros_and_groups',
-	'menu':'/pages/documentation/latest/portalmenu.html',
-	'menuCatAndApp':'/pages/documentation/latest/portalmenu.html#categories_and_applications',
-	'notifications':'/pages/documentation/latest/notifications.html',
-	'password':'/pages/documentation/latest/resetpassword.html',
-	'portal':'/pages/documentation/latest/ssocookie.html#portal_url',
-	'portalcustom':'/pages/documentation/latest/portalcustom.html',
-	'portalParams':'/pages/documentation/latest/portal.html',
-	'post':'/pages/documentation/latest/formreplay.html',
-	'redirections':'/pages/documentation/latest/redirections.html',
-	'rules':'/pages/documentation/latest/writingrulesand_headers.html#rules',
-	'samlIDP':'/pages/documentation/latest/authsaml.html#register_partner_identity_provider_on_lemonldapng',
-	'samlIDPExportedAttributes':'/pages/documentation/latest/authsaml.html#exported_attributes',
-	'samlIDPMetaDataXML':'/pages/documentation/latest/authsaml.html#metadata',
-	'samlIDPOptions':'/pages/documentation/latest/authsaml.html#options',
-	'samlService':'/pages/documentation/latest/samlservice.html',
-	'samlServiceAA':'/pages/documentation/latest/samlservice.html#attribute_authority',
-	'samlServiceAdvanced':'/pages/documentation/latest/samlservice.html#advanced',
-	'samlServiceAuthnContexts':'/pages/documentation/latest/samlservice.html#authentication_contexts',
-	'samlServiceEntityID':'/pages/documentation/latest/samlservice.html#entry_identifier',
-	'samlServiceIDP':'/pages/documentation/latest/samlservice.html#identity_provider',
-	'samlServiceNameIDFormats':'/pages/documentation/latest/samlservice.html#nameid_formats',
-	'samlServiceOrganization':'/pages/documentation/latest/samlservice.html#organization',
-	'samlServiceSecurity':'/pages/documentation/latest/samlservice.html#security_parameters',
-	'samlServiceSP':'/pages/documentation/latest/samlservice.html#service_provider',
-	'samlSP':'/pages/documentation/latest/idpsaml.html#register_partner_service_provider_on_lemonldapng',
-	'samlSPExportedAttributes':'/pages/documentation/latest/idpsaml.html#exported_attributes',
-	'samlSPMetaDataXML':'/pages/documentation/latest/idpsaml.html#metadata',
-	'samlSPOptions':'/pages/documentation/latest/idpsaml.html#options',
-	'securetoken':'/pages/documentation/latest/securetoken.html',
-	'security':'/pages/documentation/latest/security.html#configure_security_settings',
-	'sessions':'/pages/documentation/latest/sessions.html',
-	'sessionsdb':'/pages/documentation/latest/start.html#sessions_database',
-	'sympa':'/pages/documentation/latest/applications/sympa.html',
-	'userdbParams':'/pages/documentation/latest/start.html#authentication_and_users_database',
-	'vhostOptions':'/pages/documentation/latest/configvhost.html#options',
-	'virtualHosts':'/pages/documentation/latest/configvhost.html',
-	'zimbra':'/pages/documentation/latest/applications/zimbra.html',
+	'advanced':'/pages/documentation/current/start.html#advanced_features',
+	'authApache':'/pages/documentation/current/authapache.html',
+	'authDBI':'/pages/documentation/current/authdbi.html',
+	'authDBIConnection':'/pages/documentation/current/authdbi.html#connection',
+	'authDBILevel':'/pages/documentation/current/authdbi.html#authentication_level',
+	'authDBIPassword':'/pages/documentation/current/authdbi.html#password',
+	'authDBISchema':'/pages/documentation/current/authdbi.html#schema',
+	'authCAS':'/pages/documentation/current/authcas.html',
+	'authChoice':'/pages/documentation/current/authchoice.html',
+	'authLDAP':'/pages/documentation/current/authldap.html',
+	'authLDAPConnection':'/pages/documentation/current/authldap.html#connection',
+	'authLDAPFilters':'/pages/documentation/current/authldap.html#filters',
+	'authLDAPGroups':'/pages/documentation/current/authldap.html#groups',
+	'authLDAPLevel':'/pages/documentation/current/authldap.html#authentication_level',
+	'authLDAPPassword':'/pages/documentation/current/authldap.html#password',
+	'authNull':'/pages/documentation/current/authnull.html',
+	'authOpenID':'/pages/documentation/current/authopenid.html',
+	'authParams':'/pages/documentation/current/start.html#authentication_users_and_password_databases',
+	'authProxy':'/pages/documentation/current/authproxy.html',
+	'authRemote':'/pages/documentation/current/authremote.html',
+	'authSlave':'/pages/documentation/current/authslave.html',
+	'authSSL':'/pages/documentation/current/authssl.html',
+	'authTwitter':'/pages/documentation/current/authtwitter.html',
+	'authYubikey':'/pages/documentation/current/authyubikey.html',
+	'cookies':'/pages/documentation/current/ssocookie.html',
+	'customfunctions':'/pages/documentation/current/customfunctions.html',
+	'default':'/pages/documentation/current/start.html#configuration',
+	'exportedVars':'/pages/documentation/current/exportedvars.html',
+	'headers':'/pages/documentation/current/writingrulesand_headers.html#headers',
+	'issuerdb':'/pages/documentation/current/start.html#identity_provider',
+	'issuerdbCAS':'/pages/documentation/current/idpcas.html',
+	'issuerdbOpenID':'/pages/documentation/current/idpopenid.html',
+	'issuerdbSAML':'/pages/documentation/current/idpsaml.html',
+	'loginHistory':'/pages/documentation/current/loginhistory.html',
+	'logoutforward':'/pages/documentation/current/logoutforward.html',
+	'logs':'/pages/documentation/current/logs.html',
+	'macrosandgroups':'/pages/documentation/current/exportedvars.html#extend_variables_using_macros_and_groups',
+	'menu':'/pages/documentation/current/portalmenu.html',
+	'menuCatAndApp':'/pages/documentation/current/portalmenu.html#categories_and_applications',
+	'notifications':'/pages/documentation/current/notifications.html',
+	'password':'/pages/documentation/current/resetpassword.html',
+	'portal':'/pages/documentation/current/ssocookie.html#portal_url',
+	'portalcustom':'/pages/documentation/current/portalcustom.html',
+	'portalParams':'/pages/documentation/current/portal.html',
+	'portalRedirections':'/pages/documentation/current/redirections.html#portal_redirections',
+	'post':'/pages/documentation/current/formreplay.html',
+	'redirections':'/pages/documentation/current/redirections.html',
+	'reloadUrls':'/pages/documentation/current/configlocation.html#configuration_reload',
+	'rules':'/pages/documentation/current/writingrulesand_headers.html#rules',
+	'samlIDP':'/pages/documentation/current/authsaml.html#register_partner_identity_provider_on_lemonldapng',
+	'samlIDPExportedAttributes':'/pages/documentation/current/authsaml.html#exported_attributes',
+	'samlIDPMetaDataXML':'/pages/documentation/current/authsaml.html#metadata',
+	'samlIDPOptions':'/pages/documentation/current/authsaml.html#options',
+	'samlService':'/pages/documentation/current/samlservice.html',
+	'samlServiceAA':'/pages/documentation/current/samlservice.html#attribute_authority',
+	'samlServiceAdvanced':'/pages/documentation/current/samlservice.html#advanced',
+	'samlServiceAuthnContexts':'/pages/documentation/current/samlservice.html#authentication_contexts',
+	'samlServiceEntityID':'/pages/documentation/current/samlservice.html#entry_identifier',
+	'samlServiceIDP':'/pages/documentation/current/samlservice.html#identity_provider',
+	'samlServiceNameIDFormats':'/pages/documentation/current/samlservice.html#nameid_formats',
+	'samlServiceOrganization':'/pages/documentation/current/samlservice.html#organization',
+	'samlServiceSecurity':'/pages/documentation/current/samlservice.html#security_parameters',
+	'samlServiceSP':'/pages/documentation/current/samlservice.html#service_provider',
+	'samlSP':'/pages/documentation/current/idpsaml.html#register_partner_service_provider_on_lemonldapng',
+	'samlSPExportedAttributes':'/pages/documentation/current/idpsaml.html#exported_attributes',
+	'samlSPMetaDataXML':'/pages/documentation/current/idpsaml.html#metadata',
+	'samlSPOptions':'/pages/documentation/current/idpsaml.html#options',
+	'securetoken':'/pages/documentation/current/securetoken.html',
+	'security':'/pages/documentation/current/security.html#configure_security_settings',
+	'sessions':'/pages/documentation/current/sessions.html',
+	'sessionsdb':'/pages/documentation/current/start.html#sessions_database',
+	'sympa':'/pages/documentation/current/applications/sympa.html',
+	'userdbParams':'/pages/documentation/current/start.html#authentication_and_users_database',
+	'vhostOptions':'/pages/documentation/current/configvhost.html#options',
+	'virtualHosts':'/pages/documentation/current/configvhost.html',
+	'zimbra':'/pages/documentation/current/applications/zimbra.html',
 };
 
 /* Init simpleTreeCollection */
@@ -256,11 +259,13 @@ function simpleTreeSetMenuStyle(style){
 	if(style=="tree"){
 		$("link#cssmenu").attr("href",csspath+"tree.css");
 		treejquerycss=false;
-		simpleTreeCollection[0].option.autoclose=false;
+		treeautoclose=false;
+		simpleTreeCollection[0].option.autoclose=treeautoclose;
 	}else{
 		$("link#cssmenu").attr("href",csspath+"accordion.css");
 		treejquerycss=true;
-		simpleTreeCollection[0].option.autoclose=true;
+		treeautoclose=true;
+		simpleTreeCollection[0].option.autoclose=treeautoclose;
 	}
 	simpleTreeDefaultJqueryClasses();
 	simpleTreeToggleJqueryClasses();
@@ -379,6 +384,20 @@ function setlmrule(id,c,r,v){
 	$('#text_'+safeSelector(id)).attr('name',re);
 	$('#text_'+safeSelector(id)).text(text);
 }
+function setlmgrantsessionrule(id,c,r,v){
+        c=$(c).attr('value');
+        r=$(r).attr('value');
+        v=$(v).attr('value') || '#';
+        var re=r;
+        var text=r;
+        if(c.length>0){
+                re=r+'##'+c;
+                text=c;
+        }
+        setlmdata(id,v);
+        $('#text_'+safeSelector(id)).attr('name',re);
+        $('#text_'+safeSelector(id)).text(text);
+}
 function setlmfile(id,input){
 	var inputname=$(input).attr('id');
 	if($(input).attr('value').length==0){
@@ -398,8 +417,8 @@ function setlmfile(id,input){
 		fileElementId:inputname,
 		dataType:'json',
 		success:function(data,status){
-			if(typeof(data.errors) != 'undefined' && data.errors != ''){
-				popup('<h3>Request failed</h3><ul class="error"><li><strong>Error code:</strong> '+data.errors+'</li></ul>');
+			if(typeof(data.content.errors) != 'undefined' && data.content.errors != ''){
+				popup('<h3>Request failed</h3><ul class="error"><li><strong>Error code:</strong> '+data.content.errors+'</li></ul>');
 			}else{
 				data.content = data.content.replace(/&lt;/g,'<').replace(/&gt;/g,'>');
 				setlmdata(id,data.content);
@@ -486,7 +505,7 @@ function display(div,title) {
 	$('#content_'+div).removeClass('hidden');
 	$('#content_'+div).addClass('content');
 	$('#content_title').html(title);
-	$('#newkb,#newrb,#delkb,#newkbr,#newrbr,#bdelvh,#bnewvh').hide();
+	$('#newkb,#newrb,#delkb,#newkbr,#newrbr,#newgsrb,#newgsrbr,#bdelvh,#bnewvh').hide();
 	$('#newidpsamlmetadatab,#delidpsamlmetadatab').hide();
 	$('#newspsamlmetadatab,#delspsamlmetadatab').hide();
 	$('#newsamlattributeb,#delsamlattributeb').hide();
@@ -578,23 +597,28 @@ function authParams(id) {
 	display('authParams',lmtext(id));
 }
 function formateSelectAuth(id,value){
+	// Handle "ldap" case for old versions
+	if(value && value.toLowerCase()=="ldap"){
+		value="LDAP";
+	}
 	formateSelect(id,[
 		'Apache=Apache',
+		'Choice=Authentication choice',
 		'CAS=Central Authentication Service (CAS)',
 		'DBI=Database (DBI)',
-		'LA=Liberty Alliance',
+		'Demo=Demonstration',
 		'LDAP=LDAP',
 		'Multi=Multiple',
 		'Null=None',
 		'OpenID=OpenID',
 		'Proxy=Proxy',
+		'Radius=Radius',
 		'Remote=Remote',
 		'SAML=SAML v2',
+		'Slave=Slave',
 		'SSL=SSL',
 		'Twitter=Twitter',
-		'Yubikey=Yubikey',
-		'Slave=Slave',
-		'Choice=Authentication choice'
+		'Yubikey=Yubikey'
 		],value);
 }
 function userdbParams(id) {
@@ -629,16 +653,21 @@ function userdbParams(id) {
 	display('authParams',lmtext(id));
 }
 function formateSelectUser(id,value){
+	// Handle "ldap" case for old versions
+	if(value && value.toLowerCase()=="ldap"){
+		value="LDAP";
+	}
 	formateSelect(id,[
 		'DBI=Database (DBI)',
+		'Demo=Demonstration',
 		'LDAP=LDAP',
 		'Multi=Multiple',
 		'Null=None',
 		'OpenID=OpenID',
 		'Proxy=Proxy',
 		'Remote=Remote',
-		'Slave=Slave',
-		'SAML=SAML v2'
+		'SAML=SAML v2',
+		'Slave=Slave'
 		],value);
 }
 function passworddbParams(id) {
@@ -648,8 +677,13 @@ function passworddbParams(id) {
 	display('authParams',lmtext(id));
 }
 function formateSelectPassword(id,value){
+	// Handle "ldap" case for old versions
+	if(value && value.toLowerCase()=="ldap"){
+		value="LDAP";
+	}
 	formateSelect(id,[
 		'DBI=Database (DBI)',
+		'Demo=Demonstration',
 		'LDAP=LDAP',
 		'Null=None'
 		],value);
@@ -759,6 +793,7 @@ function btext(id) {
 	$('#btextKey').attr('value',lmtext(id));
 	$('#btextValue').attr('value',lmdata(id));
 	display('btext',lmtext(id));
+	$('#btextValue,#btextKey').elastic()
 	$('#newkb,#delkb').show();
 }
 function bool(id) {
@@ -809,6 +844,12 @@ function filearea(id) {
 function samlAssertion(id) {
 	currentId=id;
 	var t=lmdata(id).split(';');
+
+	// Reset text fields
+	$('#samlAssertionIndex').attr('value','');
+	$('#samlAssertionLocation').attr('value','');
+
+	// Fill fields
 	if(t[0]==1){
 		$('#samlAssertionDefaultOn').attr('checked',true);
 	}else{
@@ -827,6 +868,13 @@ function samlAssertion(id) {
 function samlAttribute(id) {
 	currentId=id;
 	var t=lmdata(id).split(';');
+
+	// Reset text fields
+	$('#samlAttributeKey').attr('value','');
+	$('#samlAttributeName').attr('value','');
+	$('#samlAttributeFriendlyName').attr('value','');
+
+	// Fill fields
 	if(t[0]==1){
 		$('#samlAttributeMandatoryOn').attr('checked',true);
 	}else{
@@ -844,8 +892,8 @@ function samlAttribute(id) {
 	display('samlAttribute',lmtext(id));
 	$('#newsamlattributeb,#delsamlattributeb').show();
 }
-function samlAttributeRoot(){
-	currentId=simpleTreeCollection[0].getSelected().attr('id');
+function samlAttributeRoot(id){
+	currentId=id;
 	display('default','');
 	$('#newsamlattributebr').show();
 }
@@ -900,7 +948,8 @@ function securedCookieValues(id){
 	formateSelect('select',[
 		'0='+text4securedCookie0,
 		'1='+text4securedCookie1,
-		'2='+text4securedCookie2
+		'2='+text4securedCookie2,
+		'3='+text4securedCookie3
 		],lmdata(id));
 	display('select',lmtext(id));
 }
@@ -929,6 +978,7 @@ function rules(id){
 	$('#rulKey').attr('value',b[2]);
 	$('#rulValue').attr('value',lmdata(id));
 	display('rules',lmtext(lmparent(id)));
+	$('#rulComment,#rulKey,#rulValue').elastic();
 	if(t=='default'){
 		$('#rulKey').attr('readonly','readonly');
 		$('#rulCommentDiv').css('display','none');
@@ -944,6 +994,26 @@ function rulesRoot(id){
 	currentId=id;
 	display('default','');
 	$('#newrbr').show();
+}
+function grantSessionRules(id){
+	currentId=id;
+	var t=lmtext(id);
+	var b=t.match(/^(.*?)(?:|##(.*))$/);
+	if(typeof(b[2])=='undefined')b[2]='';
+	var v=lmdata(id);
+	if(v=='#')v=''
+	$('#grantSessionRulKey').attr('value',b[1]);
+	$('#grantSessionRulComment').attr('value',b[2]);
+	$('#grantSessionRulValue').attr('value',v);
+	display('grantSessionRules',lmtext(lmparent(id)));
+	$('#grantSessionRulKey,#grantSessionRulComment,#grantSessionRulValue').elastic();
+	$('#delkb').show();
+	$('#newgsrb').show();
+}
+function grantSessionRulesRoot(id){
+	currentId=id;
+	display('default','');
+	$('#newgsrbr').show();
 }
 function reloadAuthParams() {
 	var value=$('#authText').attr('value');
@@ -1009,6 +1079,22 @@ function newRule(){
 		rules(newIdValue);
 	});
 	return false;
+}
+function newGrantSessionRuleR(){
+        var newIdValue=newId(currentId);
+        simpleTreeCollection[0].addNode(newIdValue,text4newCondition,function(d,s){
+                $('>span',s).attr('onClick','grantSessionRules("'+newIdValue+'")').attr('name','##'+text4newCondition).attr('value','').attr('id','text_'+newIdValue);
+                grantSessionRules(newIdValue);
+        });
+        return false;
+}
+function newGrantSessionRule(){
+        var newIdValue=newId(currentId);
+        simpleTreeCollection[0].newNodeAfter(newIdValue,text4newCondition,function(d,s){
+                $('>span',s).attr('onClick','grantSessionRules("'+newIdValue+'")').attr('name','##'+text4newCondition).attr('value','').attr('id','text_'+newIdValue);
+                grantSessionRules(newIdValue);
+        });
+        return false;
 }
 function delKey(id){
 	if(!id){id=currentId;}
@@ -1087,22 +1173,22 @@ function uploadConf(f){
 		success:function(data){
 			if(data==null){networkPb()}
 			else{
-				var c='<h3>'+data.result.msg+'</h3>';
-				if(data.result.cfgNum<=0){
-					if(typeof(data.errors)!='undefined'){
+				var c='<h3>'+data.content.result.msg+'</h3>';
+				if(data.content.result.cfgNum<=0){
+					if(typeof(data.content.errors)!='undefined'){
 						c+='<h4>Errors</h4>';
 						c+='<ul class="error">';
-						for(m in data.errors){
-							c+='<li><strong>'+m+':</strong> '+data.errors[m]+'</li>';
+						for(m in data.content.errors){
+							c+='<li><strong>'+m+':</strong> '+data.content.errors[m]+'</li>';
 						}
 						c+='</ul>';
 					}
 				}
 				else{
 					// Update configuration attributes
-					var cfgNum = data.result.cfgNum;
+					var cfgNum = data.content.result.cfgNum;
 					$('#cfgNum').text(cfgNum);
-					setCfgAttributes(data.cfgDatas);
+					setCfgAttributes(data.content.cfgDatas);
 					cfgAttrDone++;
 
 					// Reload menu
@@ -1123,20 +1209,20 @@ function uploadConf(f){
 
 
 				}
-				if(typeof(data.warnings)!='undefined'){
+				if(typeof(data.content.warnings)!='undefined'){
 					c+='<h4>Warnings</h4>';
 					c+='<ul class="warning">';
-					for(m in data.warnings){
-						c+='<li><strong>'+m+':</strong> '+data.warnings[m]+'</li>';
+					for(m in data.content.warnings){
+						c+='<li><strong>'+m+':</strong> '+data.content.warnings[m]+'</li>';
 					}
 						c+='</ul>';
 				}
-				c+='<p>'+data.result.other+'</p>';
-				if(typeof(data.applyStatus)!='undefined'){
+				c+='<p>'+data.content.result.other+'</p>';
+				if(typeof(data.content.applyStatus)!='undefined'){
 					c+='<h4>Application status</h4>';
 					c+='<ul>';
-					for(m in data.applyStatus){
-						c+='<li><strong>'+m+':</strong> '+data.applyStatus[m]+'</li>';
+					for(m in data.content.applyStatus){
+						c+='<li><strong>'+m+':</strong> '+data.content.applyStatus[m]+'</li>';
 					}
 					c+='</ul>';
 				}
@@ -1158,7 +1244,7 @@ function getCfgAttributes() {
 		success:function(data){
 			if(data==null){networkPb()}
 			else{
-				setCfgAttributes(data);
+				setCfgAttributes(data.content);
 				cfgAttrDone++;
 			}
 		},
@@ -1170,10 +1256,15 @@ function getCfgAttributes() {
 }
 function setCfgAttributes(data){
 	var t = new Array('cfgAuthor','cfgAuthorIP','cfgDate');
-	if(data.cfgDate.match(/^\d+$/)){
-		var d=new Date(data.cfgDate*1000);
+
+	// Convert date to locale string
+	var date = data.cfgDate.toString();
+	if(date.match(/^\d+$/)){
+		var d=new Date(date*1000);
 		data.cfgDate=d.toLocaleString();
 	}
+
+	// Set configuration data
 	for(i in t){
 		$('#'+t[i]).text(data[t[i]]);
 	}
