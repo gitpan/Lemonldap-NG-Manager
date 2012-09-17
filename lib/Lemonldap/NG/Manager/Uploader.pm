@@ -20,7 +20,7 @@ use Lemonldap::NG::Manager::_i18n;
 use Lemonldap::NG::Manager::Request;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 
-our $VERSION = '1.2.0';
+our $VERSION = '1.2.2';
 our ( $stylesheet, $parser );
 
 ## @method void confUpload(ref rdata)
@@ -752,7 +752,7 @@ sub applyConf {
     $ua->timeout(10);
 
     # Parse apply values
-    foreach ( sort keys %reloadUrls ) {
+    foreach ( keys %reloadUrls ) {
         my ( $host, $request ) = ( $_, $reloadUrls{$_} );
         my ( $method, $vhost, $uri ) =
           ( $request =~ /^(https?):\/\/([^\/]+)(.*)$/ );

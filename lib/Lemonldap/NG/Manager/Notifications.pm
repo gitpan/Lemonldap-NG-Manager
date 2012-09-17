@@ -22,7 +22,7 @@ use utf8;
 our $whatToTrace;
 *whatToTrace = \$Lemonldap::NG::Handler::_CGI::whatToTrace;
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.2.2';
 
 our @ISA = qw(
   Lemonldap::NG::Handler::CGI
@@ -570,7 +570,7 @@ sub newNotif {
         $res .= '<h1 class="ui-widget-header ui-corner-all">'
           . $self->translate('error') . '</h1>';
         $res .= '<div class="ui-corner-all ui-widget-content">';
-        $res .= $self->translated('notificationNotCreated');
+        $res .= $self->translate('notificationNotCreated');
         $res .= '</div>';
         return $res;
 
