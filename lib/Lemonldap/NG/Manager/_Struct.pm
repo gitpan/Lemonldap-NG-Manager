@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '1.2.2';
+our $VERSION = '1.2.2_01';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -291,11 +291,16 @@ sub struct {
 
                 portalCustomization => {
                     _nodes => [
-                        qw(portalSkin portalAutocomplete portalCheckLogins portalUserAttr portalOpenLinkInNewWindow portalAntiFrame passwordManagement)
+                        qw(portalSkin cn:portalSkinRules portalAutocomplete portalCheckLogins portalUserAttr portalOpenLinkInNewWindow portalAntiFrame passwordManagement)
                     ],
                     _help => 'portalcustom',
 
                     portalSkin => 'text:/portalSkin:portalcustom:skinSelect',
+                    portalSkinRules => {
+                        _nodes => ['hash:/portalSkinRules:portalcustom:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'portalcustom',
+                    },
                     portalAutocomplete => 'bool:/portalAutocomplete',
                     portalCheckLogins  => 'bool:/portalCheckLogins',
                     portalUserAttr     => 'text:/portalUserAttr',
@@ -715,11 +720,11 @@ sub struct {
 
             # LOGS PARAMETERS
             logParams => {
-                _nodes => [qw(syslog useXForwardedForIP whatToTrace)],
-                _help  => 'logs',
-                syslog => 'text:/syslog',
-                useXForwardedForIP => 'bool:/useXForwardedForIP',
-                whatToTrace        => 'text:/whatToTrace',
+                _nodes         => [qw(syslog trustedProxies whatToTrace)],
+                _help          => 'logs',
+                syslog         => 'text:/syslog',
+                trustedProxies => 'text:/trustedProxies',
+                whatToTrace    => 'text:/whatToTrace',
             },
 
             # COOKIE PARAMETERS
@@ -1553,6 +1558,12 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
             test    => qr/\w+$/,
             msgFail => 'Bad skin name',
         },
+        portalSkinRules => {
+            keyTest    => $perlExpr,
+            keyMsgFail => 'Bad skin rule',
+            test       => qr/\w+$/,
+            msgFail    => 'Bad skin name',
+        },
         portalUserAttr => {
             test    => qr/\w+$/,
             msgFail => 'Unvalid session field',
@@ -1603,7 +1614,8 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
             test    => qr/^\d*$/,
             msgFail => 'Bad number',
         },
-        userControl => {
+        trustedProxies => $testNotDefined,
+        userControl    => {
             test    => $pcre,
             msgFail => 'Bad regular expression',
         },
@@ -1614,7 +1626,6 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
         useRedirectOnError     => $boolean,
         useRedirectOnForbidden => $boolean,
         useSafeJail            => $boolean,
-        useXForwardedForIP     => $boolean,
         variables              => $testNotDefined,
         vhostOptions           => {
             keyTest    => Lemonldap::NG::Common::Regexp::HOSTNAME(),
@@ -1962,13 +1973,13 @@ sub defaultConf {
         syslog                      => '',
         timeout                     => '72000',
         timeoutActivity             => '0',
+        trustedProxies              => '',
         userControl                 => '^[\w\.\-@]+$',
         userDB                      => 'LDAP',
         passwordDB                  => 'LDAP',
         useRedirectOnError          => '1',
         useRedirectOnForbidden      => '0',
         useSafeJail                 => '1',
-        useXForwardedForIP          => '0',
         vhostPort                   => '-1',
         vhostHttps                  => '-1',
         vhostMaintenance            => '0',

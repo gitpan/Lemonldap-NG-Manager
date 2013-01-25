@@ -14,7 +14,7 @@ require Lemonldap::NG::Manager::_Struct;    #inherits
 require Lemonldap::NG::Manager::_i18n;      #inherits
 require Lemonldap::NG::Manager::Request;    #inherits
 
-our $VERSION = '1.2.0';
+our $VERSION = '1.2.2_01';
 
 ## @method string node(string node)
 # Build the part of the tree that does not depends of the the configuration.
@@ -545,7 +545,7 @@ sub corresp {
 }
 
 ## @method protected void sendCfgParams(hashref h)
-# Send Author, IP, and date from a Lemonldap::NG::Conf
+# Send Author, IP, and date from a Lemonldap::NG conf
 sub sendCfgParams {
     my ( $self, $h ) = @_;
     my $cfgDatas = {};

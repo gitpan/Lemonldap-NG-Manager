@@ -9,7 +9,7 @@ package Lemonldap::NG::Manager::_i18n;
 
 use strict;
 use AutoLoader qw(AUTOLOAD);
-our $VERSION = '1.2.0';
+our $VERSION = '1.2.2_01';
 
 ## @method string translate(string text,string lang)
 # Returns $text translated in $lang.
@@ -274,7 +274,8 @@ sub en {
         portalParams                => 'Portal',
         portalRedirection           => 'Portal redirections',
         portalRequireOldPassword    => 'Require old password',
-        portalSkin                  => 'Skin',
+        portalSkin                  => 'Default Skin',
+        portalSkinRules             => 'Skin display rules',
         portalUserAttr              => 'User attribute',
         post                        => 'Form replay',
         proxyParams                 => 'Proxy parameters',
@@ -338,6 +339,7 @@ sub en {
         timeout                     => 'Sessions timeout',
         timeoutActivity             => 'Sessions activity timeout',
         trustedDomains              => 'Trusted domains',
+        trustedProxies              => 'Trusted proxies IP',
         twitterAppName              => 'Application name',
         twitterAuthnLevel           => 'Authentication level',
         twitterKey                  => 'API key',
@@ -354,7 +356,6 @@ sub en {
         useRedirectOnError          => 'Redirect on error',
         useRedirectOnForbidden      => 'Redirect on forbidden',
         useSafeJail                 => 'Use Safe jail',
-        useXForwardedForIP          => "Use X-Forwarded-For",
         variables                   => "Variables",
         vhostHttps                  => 'HTTPS',
         vhostMaintenance            => 'Maintenance mode',
@@ -363,7 +364,6 @@ sub en {
         virtualHosts                => 'Virtual Hosts',
         warning                     => 'Warning',
         whatToTrace                 => "REMOTE_USER",
-        xForwardedForAddr           => 'Forwarded IP address',
         yubikeyAuthnLevel           => 'Authentication level',
         yubikeyClientID             => 'API client ID',
         yubikeyParams               => 'Yubikey parameters',
@@ -729,7 +729,8 @@ sub fr {
         portalParams                => 'Portail',
         portalRedirection           => 'Redirections du portail',
         portalRequireOldPassword    => 'Ancien mot de passe requis',
-        portalSkin                  => 'Thème visuel',
+        portalSkin                  => 'Thème visuel par défaut',
+        portalSkinRules             => "Règles d'affichage du thème visuel",
         portalUserAttr              => "Attribut de l'utilisateur",
         post                        => 'Rejeu de formulaires',
         proxyParams                 => 'Paramètres Proxy',
@@ -794,6 +795,7 @@ sub fr {
         timeout            => 'Durée de vie maximale des sessions',
         timeoutActivity    => 'Délai d\'expiration des sessions',
         trustedDomains     => 'Domaines approuvés',
+        trustedProxies     => 'IP des proxys de confiance',
         twitterAppName     => 'Nom de l\'application',
         twitterAuthnLevel  => 'Niveau d\'authentification',
         twitterKey         => 'Clé de l\'API',
@@ -810,7 +812,6 @@ sub fr {
         useRedirectOnError     => 'Redirection pour les erreurs',
         useRedirectOnForbidden => 'Redirection pour les accès interdits',
         useSafeJail            => 'Utiliser la cage Safe',
-        useXForwardedForIP     => "Utiliser X-Forwarded-For",
         variables              => "Variables",
         vhostHttps             => 'HTTPS',
         vhostMaintenance       => 'Mode maintenance',
@@ -819,7 +820,6 @@ sub fr {
         virtualHosts           => 'Hôtes virtuels',
         warning                => 'Attention',
         whatToTrace            => "REMOTE_USER",
-        xForwardedForAddr      => 'Adresse IP transférée',
         yubikeyAuthnLevel      => "Niveau d'authentification",
         yubikeyClientID        => "Identifiant client de l'API",
         yubikeyParams          => "Paramètres Yubikey",

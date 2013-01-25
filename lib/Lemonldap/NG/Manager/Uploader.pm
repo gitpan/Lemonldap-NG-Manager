@@ -20,7 +20,7 @@ use Lemonldap::NG::Manager::_i18n;
 use Lemonldap::NG::Manager::Request;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 
-our $VERSION = '1.2.2';
+our $VERSION = '1.2.2_01';
 our ( $stylesheet, $parser );
 
 ## @method void confUpload(ref rdata)
@@ -358,7 +358,7 @@ s/^(samlSPMetaDataXML|samlSPMetaDataExportedAttributes|samlSPMetaDataOptions)\/(
 
     # 1.5 Author attributes for accounting
     $newConf->{cfgAuthor}   = $ENV{REMOTE_USER} || 'anonymous';
-    $newConf->{cfgAuthorIP} = $ENV{REMOTE_ADDR};
+    $newConf->{cfgAuthorIP} = $self->ipAddr;
     $newConf->{cfgDate}     = time();
 
     # 1.6 Global tests
@@ -744,8 +744,9 @@ sub applyConf {
     # Get apply section values
     my %reloadUrls =
       %{ $self->confObj->getLocalConf( APPLYSECTION, undef, 0 ) };
-    %reloadUrls = %{ $self->confObj->getConf->{reloadUrls} }
-      unless (%reloadUrls);
+    if ( !%reloadUrls && $self->confObj->getConf->{reloadUrls} ) {
+        %reloadUrls = %{ $self->confObj->getConf->{reloadUrls} };
+    }
 
     # Create user agent
     my $ua = new LWP::UserAgent( requests_redirectable => [] );
