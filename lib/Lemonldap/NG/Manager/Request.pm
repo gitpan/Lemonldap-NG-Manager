@@ -12,7 +12,7 @@ use JSON;
 use MIME::Base64;
 use URI::Escape;
 
-our $VERSION = '1.2.2_01';
+our $VERSION = '1.2.2';
 
 ##@method public string request(string request)
 # Return the response corresponding to the request
@@ -80,7 +80,7 @@ sub generateKeys {
 # @return Void
 sub sendJSONResponse {
     my ( $self, $content ) = splice @_;
-    my $json = new JSON();
+    my $json         = new JSON();
     $json->canonical();
     my $json_content = '';
 
