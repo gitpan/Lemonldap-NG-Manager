@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '1.2.3';
+our $VERSION = '1.2.5';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -2207,6 +2207,21 @@ sub globalTests {
                         'Virtual hosts '
                       . join( ', ', @pb )
                       . " contain a port, this is not allowed" );
+            }
+            else { return 1; }
+        },
+
+        # Force vhost to be lowercase
+        vhostUpperCase => sub {
+            my @pb;
+            foreach my $vh ( keys %{ $conf->{locationRules} } ) {
+                push @pb, $vh if ( $vh ne lc $vh );
+            }
+            if (@pb) {
+                return ( 0,
+                        'Virtual hosts '
+                      . join( ', ', @pb )
+                      . " must be in lower case" );
             }
             else { return 1; }
         },

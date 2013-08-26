@@ -6,19 +6,20 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME           => 'Lemonldap::NG::Manager',
     VERSION_FROM   => 'lib/Lemonldap/NG/Manager.pm',    # finds $VERSION
-    LICENSE        => 'perl',
+    LICENSE        => 'gpl',
     BUILD_REQUIRES => {
-        'IO::String'          => 0,
-        'Test::Pod'              => 1.00,
+        'IO::String' => 0,
+        'Test::Pod'  => 1.00,
     },
-    PREREQ_PM => {
+    META_MERGE => { 'LWP::Protocol::https' => 0, },
+    PREREQ_PM  => {
         'Convert::PEM'           => 0,
         'Crypt::OpenSSL::RSA'    => 0,
         'HTML::Template'         => 0,
         'JSON'                   => 0,
-        'Lemonldap::NG::Common'  => '1.2.4',
-        'Lemonldap::NG::Handler' => '1.2.4',
-        'Lemonldap::NG::Portal'  => '1.2.4',
+        'Lemonldap::NG::Common'  => '1.2.5',
+        'Lemonldap::NG::Handler' => '1.2.5',
+        'Lemonldap::NG::Portal'  => '1.2.5',
         'LWP'                    => 0,
         'URI'                    => 0,
         'XML::LibXSLT'           => 0,
