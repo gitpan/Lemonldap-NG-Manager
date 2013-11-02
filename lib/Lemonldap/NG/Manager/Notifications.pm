@@ -13,7 +13,7 @@ package Lemonldap::NG::Manager::Notifications;
 
 use strict;
 use Lemonldap::NG::Handler::CGI qw(:globalStorage :locationRules);
-use Lemonldap::NG::Portal::Notification;
+use Lemonldap::NG::Common::Notification;
 use Lemonldap::NG::Common::Conf;              #link protected conf Configuration
 use Lemonldap::NG::Common::Conf::Constants;   #inherits
 require Lemonldap::NG::Manager::_i18n;        #inherits
@@ -22,7 +22,7 @@ use utf8;
 our $whatToTrace;
 *whatToTrace = \$Lemonldap::NG::Handler::_CGI::whatToTrace;
 
-our $VERSION = '1.2.2';
+our $VERSION = '1.3.0';
 
 our @ISA = qw(
   Lemonldap::NG::Handler::CGI
@@ -81,7 +81,7 @@ sub new {
 
     # Else use the configuration backend
     else {
-        (%$tmp) = ( %{ $self->{lmConf} } );
+        (%$tmp) = (%$conf);
         $class->abort( "notificationStorage not defined",
             "This parameter is required to use notification system" )
           unless ( ref($tmp) );
@@ -91,16 +91,16 @@ sub new {
         $tmp->{type} =~ s/(CBDI|RDBI)/DBI/;    # CDBI/RDBI are DBI
 
         # If type not File or DBI, abort
-        $class->abort("Only File or DBI supported for Notifications")
-          unless $tmp->{type} =~ /^(File|DBI)$/;
+        $class->abort("Only File, DBI or LDAP supported for Notifications")
+          unless $tmp->{type} =~ /^(File|DBI|LDAP)$/;
 
         # Force table name
         $tmp->{table} = 'notifications';
     }
 
     $tmp->{p}            = $self;
-    $self->{notifObject} = Lemonldap::NG::Portal::Notification->new($tmp);
-    $class->abort($Lemonldap::NG::Portal::Notification::msg)
+    $self->{notifObject} = Lemonldap::NG::Common::Notification->new($tmp);
+    $class->abort($Lemonldap::NG::Common::Notification::msg)
       unless ( $self->{notifObject} );
 
     # Multi values separator
@@ -636,7 +636,7 @@ notifications
   our $cgi ||= Lemonldap::NG::Manager::Notifications->new({
         localStorage        => "Cache::FileCache",
         localStorageOptions => {
-            'namespace'          => 'lemonldap-ng',
+            'namespace'          => 'lemonldap-ng-config',
             'default_expires_in' => 600,
             'directory_umask'    => '007',
             'cache_root'         => '/tmp',
@@ -647,8 +647,6 @@ notifications
           type=>'File',
           dirName=>"/tmp/",
         },
-        # Force the use of X-FORWARDED-FOR for IP
-        useXForwardedForIP => 1,
         # Optionnal
         protection    => 'rule: $uid eq "admin"',
         # Or to use rules from manager
@@ -676,7 +674,7 @@ L<Lemonldap::NG::Handler::CGI>, L<Lemonldap::NG::Manager>
 
 =item Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
 
-=item François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+=item FranÃ§ois-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
 
 =item Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
@@ -702,7 +700,7 @@ L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 
 =item Copyright (C) 2012 by Sandro Cazzaniga, E<lt>cazzaniga.sandro@gmail.comE<gt>
 
-=item Copyright (C) 2012, 2013 by François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+=item Copyright (C) 2012, 2013 by FranÃ§ois-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
 
 =item Copyright (C) 2011, 2012 by Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
 

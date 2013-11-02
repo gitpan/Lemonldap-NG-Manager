@@ -24,7 +24,7 @@ use utf8;
 our $whatToTrace;
 *whatToTrace = \$Lemonldap::NG::Handler::_CGI::whatToTrace;
 
-our $VERSION = '1.2.5';
+our $VERSION = '1.3.0';
 
 our @ISA = qw(
   Lemonldap::NG::Handler::CGI
@@ -80,25 +80,28 @@ sub new {
     # Multi values separator
     $self->{multiValuesSeparator} ||= '; ';
 
-    # Now we're ready to display sessions. Choose display type
-    foreach my $k ( $self->param() ) {
+    # Attributes to hide
+    $self->{hiddenAttributes} = "_password"
+      unless defined $self->{hiddenAttributes};
 
-        # Case ajax request : execute corresponding sub and quit
-        if ( grep { $_ eq $k } qw(delete session id uidByIp uid letter p) ) {
-            print $self->header( -type => 'text/html;charset=utf-8' );
-            print $self->$k( $self->param($k) );
-            $self->quit();
-        }
-
-        # Case else : store tree type choosen to use it later in tree()
-        elsif ( grep { $_ eq $k } qw(doubleIp fullip fulluid ipclasses) ) {
-            $self->{_tree} = $k;
-            last;
-        }
+    # Now we're ready to display sessions. Choose display type:
+    # case AJAX request
+    if ( my ($k) = grep /^(?:uid(?:ByIp)?|session|delete|letter|id|p)$/,
+        $self->param() )
+    {
+        print $self->header( -type => 'text/html;charset=utf-8' );
+        $self->lmLog( "Ajax request: $k", 'debug' );
+        print $self->$k( $self->param($k) );
+        $self->quit();
     }
+
+    # case else : store tree type choosen to use it later in tree()
+    ( $self->{_tree} ) = grep /^(?:full(?:uid|ip)|ipclasses|doubleIp)$/,
+      $self->param();
 
     # default display : list by uid
     $self->{_tree} ||= 'list';
+    $self->lmLog( "Session display type: $self->{_tree}", 'debug' );
 
     return $self;
 }
@@ -212,8 +215,7 @@ sub doubleIp {
             $res .= "<li class=\"open\" id=\"di$ip\"><span>$ip</span><ul>";
 
             # For each IP node, store sessions sorted by start time
-            foreach
-              my $session ( sort { $a->{startTime} <=> $b->{startTime} }
+            foreach my $session ( sort { $a->{startTime} <=> $b->{startTime} }
                 @{ $byUid->{$uid}->{$ip} } )
             {
                 $res .=
@@ -446,8 +448,8 @@ sub session {
             $value = $newvalue;
         }
 
-        # Hide password
-        $value = '******' if ( $_ =~ /^_password$/ );
+        # Hide attributes
+        $value = '****' if ( $self->{hiddenAttributes} =~ /\b$_\b/ );
 
         # Manage timestamp
         if ( $_ =~ /^(_utime|_lastAuthnUTime)$/ ) {
@@ -473,8 +475,9 @@ sub session {
         'saml'         => [
             qw(_idp _idpConfKey _samlToken _lassoSessionDump _lassoIdentityDump)
         ],
-        'groups' => [qw(groups)],
-        'ldap'   => [qw(dn)],
+        'groups'    => [qw(groups)],
+        'ldap'      => [qw(dn)],
+        'BrowserID' => [qw(_browserIdAnswer _browserIdAnswerRaw)],
     };
 
     # Display categories
@@ -652,7 +655,8 @@ sub uidByIp {
     my ( $byUser, $res );
     $res = Lemonldap::NG::Common::Apache::Session->searchOn(
         $self->{globalStorageOptions},
-        $self->{ipField}, $ip );
+        $self->{ipField}, $ip, '_httpSessionType', $whatToTrace,
+        $self->{ipField}, 'startTime' );
     while ( my ( $id, $entry ) = each(%$res) ) {
         next if ( $entry->{_httpSessionType} );
         if ( $entry->{ $self->{ipField} } eq $ip ) {
@@ -684,7 +688,8 @@ sub uid {
     my ( $byIp, $res );
     $res = Lemonldap::NG::Common::Apache::Session->searchOn(
         $self->{globalStorageOptions},
-        $whatToTrace, $uid );
+        $whatToTrace, $uid, '_httpSessionType', $whatToTrace,
+        $self->{ipField}, 'startTime' );
     while ( my ( $id, $entry ) = each(%$res) ) {
         next if ( $entry->{_httpSessionType} );
         if ( $entry->{$whatToTrace} eq $uid ) {
@@ -894,7 +899,7 @@ L<Lemonldap::NG::Handler::CGI>, L<Lemonldap::NG::Manager>
 
 =item Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
 
-=item François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+=item FranÃ§ois-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
 
 =item Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
@@ -918,7 +923,7 @@ L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 
 =item Copyright (C) 2008, 2009, 2010, 2013 by Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
-=item Copyright (C) 2012 by François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+=item Copyright (C) 2012 by FranÃ§ois-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
 
 =item Copyright (C) 2009, 2010, 2011, 2012 by Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
 

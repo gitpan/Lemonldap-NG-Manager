@@ -9,7 +9,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '1.2.5';
+our $VERSION = '1.3.0';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -48,12 +48,15 @@ sub cstruct {
                         _help  => 'post',
                     },
                     vhostOptions => {
-                        _nodes => [qw(vhostPort vhostHttps vhostMaintenance)],
+                        _nodes => [
+                            qw(vhostPort vhostHttps vhostMaintenance vhostAliases)
+                        ],
                         vhostPort  => "int:/vhostOptions/$k2/vhostPort",
                         vhostHttps => "trool:/vhostOptions/$k2/vhostHttps",
                         vhostMaintenance =>
                           "bool:/vhostOptions/$k2/vhostMaintenance",
-                        _help => 'vhostOptions',
+                        vhostAliases => "text:/vhostOptions/$k2/vhostAliases",
+                        _help        => 'vhostOptions',
                     },
                 }
             }
@@ -259,8 +262,10 @@ sub struct {
 
             # PORTAL PARAMETERS
             portalParams => {
-                _nodes => [qw(portal n:portalMenu n:portalCustomization)],
-                _help  => 'portalParams',
+                _nodes => [
+                    qw(portal n:portalMenu n:portalCustomization n:portalCaptcha)
+                ],
+                _help => 'portalParams',
 
                 portal => 'text:/portal:portal:text',
 
@@ -320,6 +325,18 @@ sub struct {
                         hideOldPassword      => 'bool:/hideOldPassword',
                         mailOnPasswordChange => 'bool:/mailOnPasswordChange',
                     },
+
+                },
+
+                portalCaptcha => {
+                    _nodes => [
+                        qw(captcha_login_enabled captcha_mail_enabled captcha_size captcha_data captcha_output)
+                    ],
+                    captcha_login_enabled => 'bool:/captcha_login_enabled',
+                    captcha_mail_enabled  => 'bool:/captcha_mail_enabled',
+                    captcha_size          => 'int:/captcha_size',
+                    captcha_data          => 'text:/captcha_data',
+                    captcha_output        => 'text:/captcha_output',
                 },
             },
 
@@ -350,25 +367,30 @@ sub struct {
                       )
                     {
                         my $tmp = {
-                            ldap    => ['ldapParams'],
-                            ssl     => [qw(ldapParams sslParams)],
-                            cas     => ['casParams'],
-                            radius  => ['radiusParams'],
-                            remote  => ['remoteParams'],
-                            proxy   => ['proxyParams'],
-                            openid  => ['openIdParams'],
-                            twitter => ['twitterParams'],
-                            dbi     => ['dbiParams'],
-                            apache  => ['apacheParams'],
-                            null    => ['nullParams'],
-                            slave   => ['slaveParams'],
-                            choice  => [
-                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams)
+                            ad       => ['ldapParams'],
+                            ldap     => ['ldapParams'],
+                            ssl      => ['sslParams'],
+                            cas      => ['casParams'],
+                            radius   => ['radiusParams'],
+                            remote   => ['remoteParams'],
+                            proxy    => ['proxyParams'],
+                            openid   => ['openIdParams'],
+                            google   => ['googleParams'],
+                            facebook => ['facebookParams'],
+                            twitter  => ['twitterParams'],
+                            webid    => ['webIDParams'],
+                            dbi      => ['dbiParams'],
+                            apache   => ['apacheParams'],
+                            null     => ['nullParams'],
+                            slave    => ['slaveParams'],
+                            choice   => [
+                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams googleParams facebookParams twitterParams webIDParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams browserIdParams)
                             ],
                             multi => [
-                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams twitterParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams)
+                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams googleParams facebookParams twitterParams webIDParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams browserIdParams)
                             ],
-                            yubikey => ['yubikeyParams'],
+                            yubikey   => ['yubikeyParams'],
+                            browserid => ['browserIdParams'],
                         }->{$mod};
                         if ($tmp) {
                             $res{$_}++ foreach (@$tmp);
@@ -534,6 +556,23 @@ sub struct {
                       'text:/openIdIDPList:authOpenID:openididplist',
                 },
 
+                # Google
+                googleParams => {
+                    _nodes           => [qw(googleAuthnLevel)],
+                    _help            => 'authGoogle',
+                    googleAuthnLevel => 'int:/googleAuthnLevel',
+                },
+
+                # Facebook
+                facebookParams => {
+                    _nodes =>
+                      [qw(facebookAuthnLevel facebookAppId facebookAppSecret)],
+                    _help              => 'authFacebook',
+                    facebookAuthnLevel => 'int:/facebookAuthnLevel',
+                    facebookAppId      => 'text:facebookAppId',
+                    facebookAppSecret  => 'text:facebookAppSecret',
+                },
+
                 # Twitter
                 twitterParams => {
                     _nodes => [
@@ -544,6 +583,14 @@ sub struct {
                     twitterKey        => 'text:/twitterKey',
                     twitterSecret     => 'text:/twitterSecret',
                     twitterAppName    => 'text:/twitterAppName',
+                },
+
+                # WebID
+                webIDParams => {
+                    _nodes          => [qw(webIDAuthnLevel webIDWhitelist)],
+                    _help           => 'authWebID',
+                    webIDAuthnLevel => 'int:webIDAuthnLevel',
+                    webIDWhitelist  => 'text:/webIDWhitelist',
                 },
 
                 # DBI
@@ -639,6 +686,22 @@ sub struct {
                     yubikeyClientID     => 'text:/yubikeyClientID',
                     yubikeySecretKey    => 'text:/yubikeySecretKey',
                     yubikeyPublicIDSize => 'int:/yubikeyPublicIDSize',
+                },
+
+                # BrowserID
+                browserIdParams => {
+                    _nodes => [
+                        qw(browserIdAuthnLevel browserIdAutoLogin browserIdVerificationURL browserIdSiteName browserIdSiteLogo browserIdBackgroundColor)
+                    ],
+                    _help               => 'authBrowserID',
+                    browserIdAuthnLevel => 'int:/browserIdAuthnLevel',
+                    browserIdAutoLogin  => 'bool:/browserIdAutoLogin',
+                    browserIdVerificationURL =>
+                      'text:/browserIdVerificationURL',
+                    browserIdSiteName => 'text:/browserIdSiteName',
+                    browserIdSiteLogo => 'text:/browserIdSiteLogo',
+                    browserIdBackgroundColor =>
+                      'text:/browserIdBackgroundColor',
                 },
 
             },
@@ -1251,7 +1314,7 @@ sub struct {
             # ADVANCED SAML PARAMETERS
             samlAdvanced => {
                 _nodes => [
-                    qw(samlIdPResolveCookie samlMetadataForceUTF8 samlStorage cn:samlStorageOptions n:samlCommonDomainCookie)
+                    qw(samlIdPResolveCookie samlMetadataForceUTF8 samlStorage cn:samlStorageOptions samlRelayStateTimeout n:samlCommonDomainCookie)
                 ],
                 _help => 'samlServiceAdvanced',
 
@@ -1264,6 +1327,7 @@ sub struct {
                     _js   => 'hashRoot',
                     _help => 'samlServiceAdvanced',
                 },
+                samlRelayStateTimeout  => 'int:/samlRelayStateTimeout',
                 samlCommonDomainCookie => {
                     _nodes => [
                         qw(samlCommonDomainCookieActivation samlCommonDomainCookieDomain samlCommonDomainCookieReader samlCommonDomainCookieWriter)
@@ -1296,8 +1360,10 @@ sub testStruct {
         return 1
           if ( $@ =~ /Global symbol "\$.*requires explicit package/ );
         return ( 1,
-            "Function \"<b>$1</b>\" must be declared in customFunctions" )
-          if ( $@ =~ /Bareword "(.*?)" not allowed while "strict subs"/ );
+            "Function \"<b>$1$2</b>\" must be declared in customFunctions" )
+          if ( $@ =~
+/(?:Bareword "(\w+)" not allowed while "strict subs"|Undefined subroutine &(?:.*?::)?(\w+))/
+          );
         return ( 0, $@ );
     };
     my $noAssign = sub {
@@ -1364,9 +1430,14 @@ sub testStruct {
             },
             msgFail => 'Bad module name',
         },
-        cda        => $boolean,
-        checkXSS   => $boolean,
-        cookieName => {
+        captcha_login_enabled => $boolean,
+        captcha_mail_enabled  => $boolean,
+        captcha_size          => $integer,
+        captcha_data          => $testNotDefined,
+        captcha_output        => $testNotDefined,
+        cda                   => $boolean,
+        checkXSS              => $boolean,
+        cookieName            => {
             test    => qr/^[a-zA-Z]\w*$/,
             msgFail => 'Bad cookie name',
         },
@@ -1388,7 +1459,7 @@ sub testStruct {
         exportedVars => {
             keyTest    => qr/^!?[a-zA-Z][\w-]*$/,
             keyMsgFail => 'Bad variable name',
-            test       => qr/^[a-zA-Z][\w-]*$/,
+            test       => qr/^[a-zA-Z][\w:\-]*$/,
             msgFail    => 'Bad attribute name',
         },
         failedLoginNumber => $integer,
@@ -1631,7 +1702,7 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
             keyTest    => Lemonldap::NG::Common::Regexp::HOSTNAME(),
             keyMsgFail => 'Bad virtual host name',
             '*'        => {
-                keyTest    => qr/^vhost(Port|Https|Maintenance)$/,
+                keyTest    => qr/^vhost(Port|Https|Maintenance|Aliases)$/,
                 keyMsgFail => 'Bad option name',
             },
         },
@@ -1753,6 +1824,7 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
             test    => Lemonldap::NG::Common::Regexp::HTTP_URI(),
             msgFail => 'Bad URI',
         },
+        samlRelayStateTimeout => $integer,
 
         # SSL
         SSLAuthnLevel => $integer,
@@ -1808,11 +1880,23 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
         openIdAuthnLevel => $integer,
         openIdSecret     => $testNotDefined,
 
+        # Google
+        googleAuthnLevel => $integer,
+
+        # Facebook
+        facebookAuthnLevel => $integer,
+        facebookAppId      => $testNotDefined,
+        facebookAppSecret  => $testNotDefined,
+
         # Twitter
         twitterAuthnLevel => $integer,
         twitterKey        => $testNotDefined,
         twitterSecret     => $testNotDefined,
         twitterAppName    => $testNotDefined,
+
+        # WebID
+        webIDAuthnLevel => $integer,
+        webIDWhitelist  => $testNotDefined,
 
         # DBI
         dbiAuthnLevel       => $integer,
@@ -1884,6 +1968,14 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
         secureTokenUrls             => $testNotDefined,
         secureTokenHeader           => $testNotDefined,
         secureTokenAllowOnError     => $boolean,
+
+        # BrowserID
+        browserIdAuthnLevel      => $integer,
+        browserIdAutoLogin       => $boolean,
+        browserIdVerificationURL => $testNotDefined,
+        browserIdSiteName        => $testNotDefined,
+        browserIdSiteLogo        => $testNotDefined,
+        browserIdBackgroundColor => $testNotDefined,
     };
 }
 
@@ -1895,25 +1987,30 @@ sub defaultConf {
         applicationList => {
             'default' => { catname => 'Default category', type => "category" }
         },
-        authentication           => 'LDAP',
-        authChoiceParam          => 'lmAuth',
-        CAS_pgtFile              => '/tmp/pgt.txt',
-        casAccessControlPolicy   => 'none',
-        cda                      => '0',
-        checkXSS                 => '1',
-        cookieName               => 'lemonldap',
-        domain                   => 'example.com',
-        failedLoginNumber        => '5',
-        globalStorage            => 'Apache::Session::File',
-        hideOldPassword          => '0',
-        httpOnly                 => '1',
-        https                    => '0',
-        issuerDBSAMLActivation   => '0',
-        issuerDBSAMLPath         => '^/saml/',
-        issuerDBSAMLRule         => '1',
-        issuerDBCASActivation    => '0',
-        issuerDBCASPath          => '^/cas/',
-        issuerDBCASRule          => '1',
+        authentication         => 'LDAP',
+        authChoiceParam        => 'lmAuth',
+        captcha_login_enabled  => '0',
+        captcha_mail_enabled   => '0',
+        captcha_size           => '6',
+        captcha_data           => '/var/lib/lemonldap-ng/captcha/data',
+        captcha_output         => '/var/lib/lemonldap-ng/portal/captcha_output',
+        CAS_pgtFile            => '/tmp/pgt.txt',
+        casAccessControlPolicy => 'none',
+        cda                    => '0',
+        checkXSS               => '1',
+        cookieName             => 'lemonldap',
+        domain                 => 'example.com',
+        failedLoginNumber      => '5',
+        globalStorage          => 'Apache::Session::File',
+        hideOldPassword        => '0',
+        httpOnly               => '1',
+        https                  => '0',
+        issuerDBSAMLActivation => '0',
+        issuerDBSAMLPath       => '^/saml/',
+        issuerDBSAMLRule       => '1',
+        issuerDBCASActivation  => '0',
+        issuerDBCASPath        => '^/cas/',
+        issuerDBCASRule        => '1',
         issuerDBOpenIDActivation => '0',
         issuerDBOpenIDPath       => '^/openidserver/',
         issuerDBOpenIDRule       => '1',
@@ -2103,18 +2200,23 @@ sub defaultConf {
         samlAuthnContextMapTLSClient                  => 5,
         samlAuthnContextMapKerberos                   => 4,
         samlCommonDomainCookieActivation              => 0,
+        samlRelayStateTimeout                         => 600,
 
         # Authentication levels
-        ldapAuthnLevel    => 2,
-        dbiAuthnLevel     => 2,
-        SSLAuthnLevel     => 5,
-        CAS_authnLevel    => 1,
-        openIdAuthnLevel  => 1,
-        twitterAuthnLevel => 1,
-        apacheAuthnLevel  => 4,
-        nullAuthnLevel    => 0,
-        slaveAuthnLevel   => 2,
-        yubikeyAuthnLevel => 3,
+        ldapAuthnLevel      => 2,
+        dbiAuthnLevel       => 2,
+        SSLAuthnLevel       => 5,
+        CAS_authnLevel      => 1,
+        googleAuthnLevel    => 1,
+        openIdAuthnLevel    => 1,
+        facebookAuthnLevel  => 1,
+        twitterAuthnLevel   => 1,
+        webIDAuthnLevel     => 1,
+        apacheAuthnLevel    => 4,
+        nullAuthnLevel      => 0,
+        slaveAuthnLevel     => 2,
+        yubikeyAuthnLevel   => 3,
+        browserIdAuthnLevel => 1,
 
     };
 }
@@ -2228,7 +2330,7 @@ sub globalTests {
 
         # Check if "userDB" and "authentication" are consistent
         authAndUserDBConsistency => sub {
-            foreach my $type (qw(OpenID SAML)) {
+            foreach my $type (qw(Facebook Google OpenID SAML WebID)) {
                 return ( 0,
 "\"$type\" can not be used as user database without using \"$type\" for authentication"
                   )
@@ -2262,9 +2364,54 @@ sub globalTests {
                 1,
                 (
                     @tmp
-                    ? 'Values of parameters '
-                      . join( ',', @tmp )
-                      . ' are not defined in exported attributes or macros'
+                    ? 'Values of parameter(s) "'
+                      . join( ', ', @tmp )
+                      . '" are not defined in exported attributes or macros'
+                    : ''
+                )
+            );
+        },
+
+        # Test that variables are exported if Google is used as UserDB
+        checkUserDBGoogleAXParams => sub {
+            my @tmp;
+            if ( $conf->{userDB} =~ /^Google/ ) {
+                while ( my ( $k, $v ) = each %{ $conf->{exportedVars} } ) {
+                    if ( $v !~ Lemonldap::NG::Common::Regexp::GOOGLEAXATTR() ) {
+                        push @tmp, $v;
+                    }
+                }
+            }
+            return (
+                1,
+                (
+                    @tmp
+                    ? 'Values of parameter(s) "'
+                      . join( ', ', @tmp )
+                      . '" are not exported by Google'
+                    : ''
+                )
+            );
+        },
+
+        # Test that variables are exported if OpenID is used as UserDB
+        checkUserDBOpenIDParams => sub {
+            my @tmp;
+            if ( $conf->{userDB} =~ /^OpenID/ ) {
+                while ( my ( $k, $v ) = each %{ $conf->{exportedVars} } ) {
+                    if ( $v !~ Lemonldap::NG::Common::Regexp::OPENIDSREGATTR() )
+                    {
+                        push @tmp, $v;
+                    }
+                }
+            }
+            return (
+                1,
+                (
+                    @tmp
+                    ? 'Values of parameter(s) "'
+                      . join( ', ', @tmp )
+                      . '" are not exported by OpenID SREG'
                     : ''
                 )
             );

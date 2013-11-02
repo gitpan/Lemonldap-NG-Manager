@@ -9,11 +9,11 @@
 <!-- Offline doc CSS -->
 <link rel="stylesheet" type="text/css" href="/doc/css/screen.css" />
 <!-- jQuery UI CSS -->
-<link rel="stylesheet" type="text/css" id="csstheme" href="<TMPL_VAR NAME="DIR">/<TMPL_VAR NAME="CSS_THEME">/jquery-ui-1.8.6.custom.css" />
+<link rel="stylesheet" type="text/css" id="csstheme" href="<TMPL_VAR NAME="DIR">/<TMPL_VAR NAME="CSS_THEME">/jquery-ui-1.10.3.custom.min.css" />
 <!-- Manager CSS -->
 <link rel="stylesheet" type="text/css" id="cssmenu" href="<TMPL_VAR NAME="DIR">/css/<TMPL_VAR NAME="CSS">" />
-<script src="<TMPL_VAR NAME="DIR">/js/jquery-1.4.2.min.js" type="text/JavaScript"></script>
-<script src="<TMPL_VAR NAME="DIR">/js/jquery-ui-1.8.6.custom.min.js" type="text/JavaScript"></script>
+<script src="<TMPL_VAR NAME="DIR">/js/jquery-1.10.2.min.js" type="text/JavaScript"></script>
+<script src="<TMPL_VAR NAME="DIR">/js/jquery-ui-1.10.3.custom.min.js" type="text/JavaScript"></script>
 <script src="<TMPL_VAR NAME="DIR">/js/jquery.cookie.js" type="text/JavaScript"></script>
 <script src="<TMPL_VAR NAME="DIR">/js/jquery.ajaxfileupload.js" type="text/JavaScript"></script>
 <script src="<TMPL_VAR NAME="DIR">/js/jquery.elastic.source.js" type="text/JavaScript"></script>
@@ -22,7 +22,7 @@
 	var scriptname='<TMPL_VAR NAME="SCRIPT_NAME">';
 	var imagepath='<TMPL_VAR NAME="DIR">/images/';
 	var csspath='<TMPL_VAR NAME="DIR">/css/';
-	var jqueryuiversion='1.8.6';
+	var jqueryuiversion='1.10.3';
 	var css_menu='<TMPL_VAR NAME="CSS">';
 	var css_theme='<TMPL_VAR NAME="CSS_THEME">';
 	var themepath='<TMPL_VAR NAME="DIR">/';
@@ -47,7 +47,7 @@
         var text4newCondition='<lang en="New Condition" fr="Nouvelle Condition" />';
 //]]></script>
 <script src="<TMPL_VAR NAME="DIR">/js/manager.js" type="text/JavaScript"></script>
-<meta http-equiv="Content-Type" content="text/html; charset=utf8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 </head>
 <body>
 
@@ -471,8 +471,8 @@
        <td><lang en="Name" fr="Nom"/></td>
        <td><input type="text" id="samlAttributeName" /></td>
        <td><lang en="Mandatory" fr="Obligatoire"/></td>
-       <td><input id="samlAttributeMandatoryOn" type="radio" name="boolean" value="1" /><label for="samlAttributeMandatoryOn"><lang en="On" fr="Activé"/></label>
-           <input id="samlAttributeMandatoryOff" type="radio" name="boolean" value="0" /><label for="samlAttributeMandatoryOff"><lang en="Off" fr="Désactivé"/></label>
+       <td><input id="samlAttributeMandatoryOn" type="radio" name="samlAttributeMandatoryBoolean" value="1" /><label for="samlAttributeMandatoryOn"><lang en="On" fr="Activé"/></label>
+           <input id="samlAttributeMandatoryOff" type="radio" name="samlAttributeMandatoryBoolean" value="0" /><label for="samlAttributeMandatoryOff"><lang en="Off" fr="Désactivé"/></label>
        </td>
       </tr>
       <tr>
@@ -493,8 +493,8 @@
      <table>
       <tr>
        <td><lang en="Default" fr="Par défaut"/></td>
-       <td><input id="samlAssertionDefaultOn" type="radio" name="boolean" value="1" /><label for="samlAssertionDefaultOn"><lang en="On" fr="Activé"/></label>
-           <input id="samlAssertionDefaultOff" type="radio" name="boolean" value="0" /><label for="samlAssertionDefaultOff"><lang en="Off" fr="Désactivé"/></label>
+       <td><input id="samlAssertionDefaultOn" type="radio" name="samlAssertionDefaultBoolean" value="1" /><label for="samlAssertionDefaultOn"><lang en="On" fr="Activé"/></label>
+           <input id="samlAssertionDefaultOff" type="radio" name="samlAssertionDefaultBoolean" value="0" /><label for="samlAssertionDefaultOff"><lang en="Off" fr="Désactivé"/></label>
        </td>
       </tr>
       <tr class="hidden">
@@ -543,8 +543,8 @@
      <table>
       <tr>
        <td><lang en="List type" fr="Type de liste"/></td>
-       <td><input id="openid_serverlist_black" type="radio" name="boolean" value="0" /><label for="openid_serverlist_black"><lang en="Black list" fr="Liste noire"/></label>
-           <input id="openid_serverlist_white" type="radio" name="boolean" value="1" /><label for="openid_serverlist_white"><lang en="White list" fr="Liste blanche"/></label>
+       <td><input id="openid_serverlist_black" type="radio" name="openIdServerlistBoolean" value="0" /><label for="openid_serverlist_black"><lang en="Black list" fr="Liste noire"/></label>
+           <input id="openid_serverlist_white" type="radio" name="openIdServerlistBoolean" value="1" /><label for="openid_serverlist_white"><lang en="White list" fr="Liste blanche"/></label>
        </td>
       </tr>
       <tr>
@@ -576,6 +576,10 @@
       <tr>
        <td><lang en="Password module" fr="Module de mots de passe"/></td>
        <td><select id="authChoicePassword"></select></td>
+      </tr>
+      <tr>
+       <td><lang en="URL" fr="URL"/></td>
+       <td><input type="text" id="authChoiceURL" /></td>
       </tr>
      </table>
      <br />
