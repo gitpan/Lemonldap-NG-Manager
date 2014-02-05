@@ -10,7 +10,7 @@ use Lemonldap::NG::Handler::CGI qw(:globalStorage :locationRules);    #inherits
 use Lemonldap::NG::Common::Conf;              #link protected conf Configuration
 use Lemonldap::NG::Common::Conf::Constants;   #inherits
 
-our $VERSION = '1.3.1';
+our $VERSION = '1.3.2';
 our @ISA     = qw(
   Lemonldap::NG::Handler::CGI
   Lemonldap::NG::Manager::Downloader
@@ -133,7 +133,7 @@ sub menu {
     my $self = shift;
     require Lemonldap::NG::Manager::Downloader;
     return
-        '<ul class="simpleTree">'
+        '<ul class="simpleTree">' 
       . $self->li( 'root', 'root' )
       . $self->span(
         id   => 'root',
