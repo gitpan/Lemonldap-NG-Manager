@@ -20,7 +20,7 @@ use Lemonldap::NG::Manager::_i18n;
 use Lemonldap::NG::Manager::Request;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 
-our $VERSION = '1.2.3';
+our $VERSION = '1.3.3';
 our ( $stylesheet, $parser );
 
 ## @method void confUpload(ref rdata)
@@ -124,19 +124,6 @@ s/^text_(NewID_)?li_([\w\/\+\=]+)(\d)(?:_\d+)?$/decode_base64($2.'='x $3)/e;
             }
         }
 
-        # Get POST URL name
-        if ( $id =~ /post\/([^\/]*)?\/.*$/ ) {
-            if ( $name =~ s/^postdata:// ) {
-                $self->lmLog( "POST data $name", 'debug' );
-                $postdataflag = 1;
-            }
-            else {
-                $self->lmLog( "Entering POST URL $name", 'debug' );
-                $postflag = 1;
-                $postname = $name;
-            }
-        }
-
         # Manage new keys
         if ($NK) {
 
@@ -184,6 +171,20 @@ s/^generalParameters\/authParams\/choiceParams\/([^\/]*)?.*/authChoiceModules\/$
             else {
                 $id =~ s/(?:\/[^\/]*)?$/\/$name/;
             }
+
+        }
+
+        # Get POST URL name
+        if ( $id =~ /post\/([^\/]*)?\/.*$/ ) {
+            if ( $name =~ s/^postdata:// ) {
+                $self->lmLog( "POST data $name", 'debug' );
+                $postdataflag = 1;
+            }
+            else {
+                $self->lmLog( "Entering POST URL $name", 'debug' );
+                $postflag = 1;
+                $postname = $name;
+            }
         }
 
         # Set current Virtual Host name
@@ -198,7 +199,7 @@ s/^(samlIDPMetaDataXML|samlIDPMetaDataExportedAttributes|samlIDPMetaDataOptions)
         $id =~
 s/^(samlSPMetaDataXML|samlSPMetaDataExportedAttributes|samlSPMetaDataOptions)\/([^\/]*)?\/(.*)$/$1\/$spname\/$3/;
 
-        # Set current POST URL  name
+        # Set current POST URL name
         $id =~ s/^(post)\/([^\/]*)?\/(.*)$/$1\/$vhostname\/$postname/;
 
         $self->lmLog( "id transformed into $id", 'debug' );
