@@ -3,6 +3,7 @@ example/index.pl
 example/mrtg/lmng-mrtg
 example/mrtg/mrtg.cfg.example
 example/notfound.html
+example/notfoundfr.html
 example/notifications.pl
 example/scripts/lemonldap-ng-cli
 example/scripts/lmConfigEditor
@@ -37,6 +38,7 @@ example/skins/default/images/bullet_green.png
 example/skins/default/images/bullet_orange.png
 example/skins/default/images/bullet_red.png
 example/skins/default/images/logo_lemonldap-ng.png
+example/skins/default/images/portal-skins/bootstrap.png
 example/skins/default/images/portal-skins/custom.png
 example/skins/default/images/portal-skins/dark.png
 example/skins/default/images/portal-skins/impact.png
@@ -110,3 +112,4 @@ t/30-Manager-Struct.t
 t/40-Manager-Sessions.t
 t/50-Cli.t
 t/99-pod.t
+META.json                                Module JSON meta-data (added by MakeMaker)

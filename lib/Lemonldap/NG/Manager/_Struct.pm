@@ -7,9 +7,11 @@ package Lemonldap::NG::Manager::_Struct;
 
 use strict;
 use Lemonldap::NG::Common::Conf::SAML::Metadata;
+use Lemonldap::NG::Common::Conf::Attributes;
+use Lemonldap::NG::Common::Conf::SubAttributes;
 use Lemonldap::NG::Common::Regexp;
 
-our $VERSION = '1.3.2';
+our $VERSION = '1.4.0';
 
 ## @method protected hashref cstruct(hashref h,string k)
 # Merge $h with the structure produced with $k and return it.
@@ -201,12 +203,14 @@ sub cstruct {
 
                         samlSPMetaDataOptionsAuthnResponse => {
                             _nodes => [
-                                qw(samlSPMetaDataOptionsNameIDFormat samlSPMetaDataOptionsOneTimeUse)
+                                qw(samlSPMetaDataOptionsNameIDFormat samlSPMetaDataOptionsNameIDSessionKey samlSPMetaDataOptionsOneTimeUse)
                             ],
 
                             samlSPMetaDataOptionsNameIDFormat =>
 "text:/samlSPMetaDataOptions/$k2/samlSPMetaDataOptionsNameIDFormat"
                               . ":samlSPOptions:nameIdFormatParams",
+                            samlSPMetaDataOptionsNameIDSessionKey =>
+"text:/samlSPMetaDataOptions/$k2/samlSPMetaDataOptionsNameIDSessionKey",
                             samlSPMetaDataOptionsOneTimeUse =>
 "bool:/samlSPMetaDataOptions/$k2/samlSPMetaDataOptionsOneTimeUse",
                         },
@@ -227,10 +231,14 @@ sub cstruct {
                         },
                         samlSPMetaDataOptionsSecurity => {
 
-                            _nodes => [qw(samlSPMetaDataOptionsEncryptionMode)],
+                            _nodes => [
+                                qw(samlSPMetaDataOptionsEncryptionMode samlSPMetaDataOptionsEnableIDPInitiatedURL)
+                            ],
 
                             samlSPMetaDataOptionsEncryptionMode =>
 "text:/samlSPMetaDataOptions/$k2/samlSPMetaDataOptionsEncryptionMode:samlSPOptions:encryptionModeParams",
+                            samlSPMetaDataOptionsEnableIDPInitiatedURL =>
+"bool:/samlSPMetaDataOptions/$k2/samlSPMetaDataOptionsEnableIDPInitiatedURL",
                         },
                     },
                 }
@@ -296,7 +304,7 @@ sub struct {
 
                 portalCustomization => {
                     _nodes => [
-                        qw(portalSkin cn:portalSkinRules portalAutocomplete portalCheckLogins portalUserAttr portalOpenLinkInNewWindow portalAntiFrame passwordManagement)
+                        qw(portalSkin cn:portalSkinRules portalButtons passwordManagement portalOther)
                     ],
                     _help => 'portalcustom',
 
@@ -306,37 +314,57 @@ sub struct {
                         _js    => 'hashRoot',
                         _help  => 'portalcustom',
                     },
-                    portalAutocomplete => 'bool:/portalAutocomplete',
-                    portalCheckLogins  => 'bool:/portalCheckLogins',
-                    portalUserAttr     => 'text:/portalUserAttr',
-                    portalOpenLinkInNewWindow =>
-                      'bool:/portalOpenLinkInNewWindow',
-                    portalAntiFrame => 'bool:/portalAntiFrame',
-
-                    passwordManagement => {
+                    portalButtons => {
                         _nodes => [
-                            qw(portalDisplayResetPassword portalRequireOldPassword hideOldPassword mailOnPasswordChange)
+                            qw/portalCheckLogins portalDisplayResetPassword portalDisplayRegister/
                         ],
-
+                        portalCheckLogins => 'bool:/portalCheckLogins',
                         portalDisplayResetPassword =>
                           'bool:/portalDisplayResetPassword',
+                        portalDisplayRegister => 'bool:/portalDisplayRegister',
+                    },
+                    passwordManagement => {
+                        _nodes => [
+                            qw(portalRequireOldPassword hideOldPassword mailOnPasswordChange)
+                        ],
+
                         portalRequireOldPassword =>
                           'bool:/portalRequireOldPassword',
                         hideOldPassword      => 'bool:/hideOldPassword',
                         mailOnPasswordChange => 'bool:/mailOnPasswordChange',
                     },
+                    portalOther => {
+                        _nodes => [
+                            qw/portalAutocomplete portalUserAttr portalOpenLinkInNewWindow portalAntiFrame portalPingInterval/
+                        ],
 
+                        portalAutocomplete => 'bool:/portalAutocomplete',
+                        portalUserAttr     => 'text:/portalUserAttr',
+                        portalOpenLinkInNewWindow =>
+                          'bool:/portalOpenLinkInNewWindow',
+                        portalAntiFrame    => 'bool:/portalAntiFrame',
+                        portalPingInterval => 'int:/portalPingInterval',
+                    },
                 },
 
                 portalCaptcha => {
                     _nodes => [
-                        qw(captcha_login_enabled captcha_mail_enabled captcha_size captcha_data captcha_output)
+                        qw(captcha_login_enabled captcha_mail_enabled captcha_register_enabled captcha_size captchaStorage captchaStorageOptions)
                     ],
+                    _help => 'captcha',
+
                     captcha_login_enabled => 'bool:/captcha_login_enabled',
                     captcha_mail_enabled  => 'bool:/captcha_mail_enabled',
+                    captcha_register_enabled =>
+                      'bool:/captcha_register_enabled',
                     captcha_size          => 'int:/captcha_size',
-                    captcha_data          => 'text:/captcha_data',
-                    captcha_output        => 'text:/captcha_output',
+                    captchaStorage        => 'text:/captchaStorage',
+                    captchaStorageOptions => {
+                        _nodes => ['hash:/captchaStorageOptions:captcha:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'captcha',
+                    },
+
                 },
             },
 
@@ -346,12 +374,9 @@ sub struct {
                # Displayed nodes depend on authentication/userDB modules choosed
                 _nodes => sub {
                     my $self = shift;
-                    my $auth = $self->conf->{authentication}
-                      || $self->defaultConf()->{authentication};
-                    my $udb = $self->conf->{userDB}
-                      || $self->defaultConf()->{userDB};
-                    my $pdb = $self->conf->{passwordDB}
-                      || $self->defaultConf()->{passwordDB};
+                    my $auth = $self->conf->{authentication};
+                    my $udb  = $self->conf->{userDB};
+                    my $pdb  = $self->conf->{passwordDB};
                     $auth = lc($auth);
                     $auth =~ s/\s.*$//;    # For Multi
                     $udb = lc($udb);
@@ -384,13 +409,14 @@ sub struct {
                             null     => ['nullParams'],
                             slave    => ['slaveParams'],
                             choice   => [
-                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams googleParams facebookParams twitterParams webIDParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams browserIdParams)
+                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams googleParams facebookParams twitterParams webIDParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams browserIdParams demoParams)
                             ],
                             multi => [
-                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams googleParams facebookParams twitterParams webIDParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams browserIdParams)
+                                qw(ldapParams sslParams casParams radiusParams remoteParams proxyParams openIdParams googleParams facebookParams twitterParams webIDParams dbiParams apacheParams nullParams choiceParams slaveParams yubikeyParams browserIdParams demoParams)
                             ],
                             yubikey   => ['yubikeyParams'],
                             browserid => ['browserIdParams'],
+                            demo      => ['demoParams'],
                         }->{$mod};
                         if ($tmp) {
                             $res{$_}++ foreach (@$tmp);
@@ -416,10 +442,15 @@ sub struct {
                 # LDAP
                 ldapParams => {
                     _nodes => [
-                        qw(ldapAuthnLevel n:ldapConnection n:ldapFilters n:ldapGroups n:ldapPassword)
+                        qw(ldapAuthnLevel cn:ldapExportedVars n:ldapConnection n:ldapFilters n:ldapGroups n:ldapPassword)
                     ],
-                    _help          => 'authLDAP',
-                    ldapAuthnLevel => 'int:/ldapAuthnLevel:authLDAPLevel:int',
+                    _help            => 'authLDAP',
+                    ldapAuthnLevel   => 'int:/ldapAuthnLevel:authLDAPLevel:int',
+                    ldapExportedVars => {
+                        _nodes => ['hash:/ldapExportedVars:vars:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'authLDAP',
+                    },
                     ldapConnection => {
                         _nodes => [
                             qw(ldapServer ldapPort ldapBase managerDn managerPassword ldapTimeout ldapVersion ldapRaw)
@@ -548,29 +579,47 @@ sub struct {
 
                 # OpenID
                 openIdParams => {
-                    _nodes => [qw(openIdAuthnLevel openIdSecret openIdIDPList)],
-                    _help  => 'authOpenID',
-                    openIdAuthnLevel => 'int:/openIdAuthnLevel',
-                    openIdSecret     => 'text:/openIdSecret',
+                    _nodes => [
+                        qw(openIdAuthnLevel cn:openIdExportedVars openIdSecret openIdIDPList)
+                    ],
+                    _help              => 'authOpenID',
+                    openIdAuthnLevel   => 'int:/openIdAuthnLevel',
+                    openIdExportedVars => {
+                        _nodes => ['hash:/openIdExportedVars:vars:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'authOpenID',
+                    },
+                    openIdSecret => 'text:/openIdSecret',
                     openIdIDPList =>
                       'text:/openIdIDPList:authOpenID:openididplist',
                 },
 
                 # Google
                 googleParams => {
-                    _nodes           => [qw(googleAuthnLevel)],
-                    _help            => 'authGoogle',
-                    googleAuthnLevel => 'int:/googleAuthnLevel',
+                    _nodes => [qw(googleAuthnLevel cn:googleExportedVars)],
+                    _help  => 'authGoogle',
+                    googleAuthnLevel   => 'int:/googleAuthnLevel',
+                    googleExportedVars => {
+                        _nodes => ['hash:/googleExportedVars:vars:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'authGoogle',
+                    },
                 },
 
                 # Facebook
                 facebookParams => {
-                    _nodes =>
-                      [qw(facebookAuthnLevel facebookAppId facebookAppSecret)],
-                    _help              => 'authFacebook',
-                    facebookAuthnLevel => 'int:/facebookAuthnLevel',
-                    facebookAppId      => 'text:facebookAppId',
-                    facebookAppSecret  => 'text:facebookAppSecret',
+                    _nodes => [
+                        qw(facebookAuthnLevel cn:facebookExportedVars facebookAppId facebookAppSecret)
+                    ],
+                    _help                => 'authFacebook',
+                    facebookAuthnLevel   => 'int:/facebookAuthnLevel',
+                    facebookExportedVars => {
+                        _nodes => ['hash:/facebookExportedVars:vars:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'authFacebook',
+                    },
+                    facebookAppId     => 'text:facebookAppId',
+                    facebookAppSecret => 'text:facebookAppSecret',
                 },
 
                 # Twitter
@@ -587,19 +636,30 @@ sub struct {
 
                 # WebID
                 webIDParams => {
-                    _nodes          => [qw(webIDAuthnLevel webIDWhitelist)],
-                    _help           => 'authWebID',
-                    webIDAuthnLevel => 'int:webIDAuthnLevel',
-                    webIDWhitelist  => 'text:/webIDWhitelist',
+                    _nodes =>
+                      [qw(webIDAuthnLevel cn:webIDExportedVars webIDWhitelist)],
+                    _help             => 'authWebID',
+                    webIDAuthnLevel   => 'int:webIDAuthnLevel',
+                    webIDExportedVars => {
+                        _nodes => ['hash:/webIDExportedVars:vars:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'authWebID',
+                    },
+                    webIDWhitelist => 'text:/webIDWhitelist',
                 },
 
                 # DBI
                 dbiParams => {
                     _nodes => [
-                        qw(dbiAuthnLevel n:dbiConnection n:dbiSchema n:dbiPassword)
+                        qw(dbiAuthnLevel cn:dbiExportedVars n:dbiConnection n:dbiSchema n:dbiPassword)
                     ],
-                    _help         => 'authDBI',
-                    dbiAuthnLevel => 'int:/dbiAuthnLevel:authDBILevel:int',
+                    _help           => 'authDBI',
+                    dbiAuthnLevel   => 'int:/dbiAuthnLevel:authDBILevel:int',
+                    dbiExportedVars => {
+                        _nodes => ['hash:/dbiExportedVars:vars:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'authDBI',
+                    },
                     dbiConnection => {
                         _nodes => [qw(n:dbiConnectionAuth n:dbiConnectionUser)],
                         dbiConnectionAuth => {
@@ -655,10 +715,16 @@ sub struct {
 
                 # Slave
                 slaveParams => {
-                    _nodes =>
-                      [qw(slaveAuthnLevel slaveUserHeader slaveMasterIP)],
-                    _help           => 'authSlave',
-                    slaveAuthnLevel => 'int:/slaveAuthnLevel',
+                    _nodes => [
+                        qw(slaveAuthnLevel cn:slaveExportedVars slaveUserHeader slaveMasterIP)
+                    ],
+                    _help             => 'authSlave',
+                    slaveAuthnLevel   => 'int:/slaveAuthnLevel',
+                    slaveExportedVars => {
+                        _nodes => ['hash:/slaveExportedVars:vars:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'authSlave',
+                    },
                     slaveUserHeader => 'text:/slaveUserHeader',
                     slaveMasterIP   => 'text:/slaveMasterIP',
                 },
@@ -702,6 +768,17 @@ sub struct {
                     browserIdSiteLogo => 'text:/browserIdSiteLogo',
                     browserIdBackgroundColor =>
                       'text:/browserIdBackgroundColor',
+                },
+
+                # Demo
+                demoParams => {
+                    _nodes           => [qw(cn:demoExportedVars)],
+                    _help            => 'authDemo',
+                    demoExportedVars => {
+                        _nodes => ['hash:/demoExportedVars:vars:btext'],
+                        _js    => 'hashRoot',
+                        _help  => 'authDemo',
+                    },
                 },
 
             },
@@ -825,12 +902,21 @@ sub struct {
                 },
 
                 sessionStorage => {
-                    _nodes => [qw(globalStorage cn:globalStorageOptions)],
-                    _help  => 'sessionsdb',
+                    _nodes => [
+                        qw(globalStorage cn:globalStorageOptions localSessionStorage cn:localSessionStorageOptions)
+                    ],
+                    _help                => 'sessionsdb',
                     globalStorage        => 'text:/globalStorage',
                     globalStorageOptions => {
                         _nodes =>
                           ['hash:/globalStorageOptions:sessionsdb:btext'],
+                        _js   => 'hashRoot',
+                        _help => 'sessionsdb',
+                    },
+                    localSessionStorage        => 'text:/localSessionStorage',
+                    localSessionStorageOptions => {
+                        _nodes =>
+                          ['hash:/localSessionStorageOptions:sessionsdb:btext'],
                         _js   => 'hashRoot',
                         _help => 'sessionsdb',
                     },
@@ -872,7 +958,7 @@ sub struct {
             # OTHER PARAMETERS
             advancedParams => {
                 _nodes => [
-                    qw(customFunctions n:soap n:loginHistory n:notifications n:passwordManagement n:security n:redirection n:portalRedirection n:specialHandlers cn:logoutServices)
+                    qw(customFunctions n:soap n:loginHistory n:notifications n:passwordManagement n:register n:security n:redirection n:portalRedirection n:specialHandlers cn:logoutServices)
                 ],
                 _help => 'advanced',
 
@@ -950,6 +1036,18 @@ sub struct {
                         mailTimeout          => 'int:/mailTimeout',
                         mailSessionKey       => 'text:/mailSessionKey',
                     },
+                },
+
+                register => {
+                    _nodes => [
+                        qw/registerDB registerUrl registerTimeout registerConfirmSubject registerDoneSubject/
+                    ],
+                    _help       => 'register',
+                    registerDB  => 'text:/registerDB:register:registerdbParams',
+                    registerUrl => 'text:/registerUrl',
+                    registerTimeout        => 'int:/registerTimeout',
+                    registerConfirmSubject => 'text:/registerConfirmSubject',
+                    registerDoneSubject    => 'text:/registerDoneSubject',
                 },
 
                 security => {
@@ -1314,7 +1412,7 @@ sub struct {
             # ADVANCED SAML PARAMETERS
             samlAdvanced => {
                 _nodes => [
-                    qw(samlIdPResolveCookie samlMetadataForceUTF8 samlStorage cn:samlStorageOptions samlRelayStateTimeout n:samlCommonDomainCookie)
+                    qw(samlIdPResolveCookie samlMetadataForceUTF8 samlStorage cn:samlStorageOptions samlRelayStateTimeout samlUseQueryStringSpecific n:samlCommonDomainCookie)
                 ],
                 _help => 'samlServiceAdvanced',
 
@@ -1327,7 +1425,9 @@ sub struct {
                     _js   => 'hashRoot',
                     _help => 'samlServiceAdvanced',
                 },
-                samlRelayStateTimeout  => 'int:/samlRelayStateTimeout',
+                samlRelayStateTimeout => 'int:/samlRelayStateTimeout',
+                samlUseQueryStringSpecific =>
+                  'bool:/samlUseQueryStringSpecific',
                 samlCommonDomainCookie => {
                     _nodes => [
                         qw(samlCommonDomainCookieActivation samlCommonDomainCookieDomain samlCommonDomainCookieReader samlCommonDomainCookieWriter)
@@ -1430,19 +1530,32 @@ sub testStruct {
             },
             msgFail => 'Bad module name',
         },
-        captcha_login_enabled => $boolean,
-        captcha_mail_enabled  => $boolean,
-        captcha_size          => $integer,
-        captcha_data          => $testNotDefined,
-        captcha_output        => $testNotDefined,
-        cda                   => $boolean,
-        checkXSS              => $boolean,
-        cookieName            => {
+        captcha_login_enabled    => $boolean,
+        captcha_mail_enabled     => $boolean,
+        captcha_register_enabled => $boolean,
+        captcha_size             => $integer,
+        captcha_data             => $testNotDefined,
+        captcha_output           => $testNotDefined,
+        cda                      => $boolean,
+        checkXSS                 => $boolean,
+        cookieName               => {
             test    => qr/^[a-zA-Z]\w*$/,
             msgFail => 'Bad cookie name',
         },
         customFunctions => $testNotDefined,
-        domain          => {
+        dbiExportedVars => {
+            keyTest    => qr/^!?[a-zA-Z][\w-]*$/,
+            keyMsgFail => 'Bad variable name',
+            test       => qr/^[a-zA-Z][\w:\-]*$/,
+            msgFail    => 'Bad attribute name',
+        },
+        demoExportedVars => {
+            keyTest    => qr/^!?[a-zA-Z][\w-]*$/,
+            keyMsgFail => 'Bad variable name',
+            test       => qr/^[a-zA-Z][\w:\-]*$/,
+            msgFail    => 'Bad attribute name',
+        },
+        domain => {
             test    => qr/^\.?[\w\-]+(?:\.[a-zA-Z][\w\-]*)*(?:\.[a-zA-Z]+)$/,
             msgFail => 'Bad domain',
         },
@@ -1462,6 +1575,12 @@ sub testStruct {
             test       => qr/^[a-zA-Z][\w:\-]*$/,
             msgFail    => 'Bad attribute name',
         },
+        facebookExportedVars => {
+            keyTest    => qr/^!?[a-zA-Z][\w-]*$/,
+            keyMsgFail => 'Bad variable name',
+            test       => qr/^[a-zA-Z][\w:\-]*$/,
+            msgFail    => 'Bad attribute name',
+        },
         failedLoginNumber => $integer,
         globalStorage     => {
             test    => qr/^[\w:]+$/,
@@ -1470,6 +1589,12 @@ sub testStruct {
         globalStorageOptions => {
             keyTest    => qr/^\w+$/,
             keyMsgFail => 'Bad parameter',
+        },
+        googleExportedVars => {
+            keyTest    => qr/^!?[a-zA-Z][\w-]*$/,
+            keyMsgFail => 'Bad variable name',
+            test       => qr/^[a-zA-Z][\w:\-]*$/,
+            msgFail    => 'Bad attribute name',
         },
         grantSessionRules => {
             keyTest     => $perlExpr,
@@ -1507,6 +1632,12 @@ sub testStruct {
         ldapBase       => {
             test    => qr/^(?:\w+=.*|)$/,
             msgFail => 'Bad LDAP base',
+        },
+        ldapExportedVars => {
+            keyTest    => qr/^!?[a-zA-Z][\w-]*$/,
+            keyMsgFail => 'Bad variable name',
+            test       => qr/^[a-zA-Z][\w:\-]*$/,
+            msgFail    => 'Bad attribute name',
         },
         ldapPort => {
             test    => qr/^\d*$/,
@@ -1547,7 +1678,15 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
         ldapTimeout                     => $testNotDefined,
         ldapVersion                     => $testNotDefined,
         ldapRaw                         => $testNotDefined,
-        locationRules                   => {
+        localSessionStorage             => {
+            test    => qr/^[\w:]+$/,
+            msgFail => 'Bad module name',
+        },
+        localSessionStorageOptions => {
+            keyTest    => qr/^\w+$/,
+            keyMsgFail => 'Bad parameter',
+        },
+        locationRules => {
             keyTest => Lemonldap::NG::Common::Regexp::HOSTNAME(),
             msgFail => 'Bad virtual host name',
             '*'     => {
@@ -1598,8 +1737,14 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
             keyTest    => qr/^\w+$/,
             keyMsgFail => 'Bad parameter',
         },
-        notifyDeleted            => $boolean,
-        notifyOther              => $boolean,
+        notifyDeleted      => $boolean,
+        notifyOther        => $boolean,
+        openIdExportedVars => {
+            keyTest    => qr/^!?[a-zA-Z][\w-]*$/,
+            keyMsgFail => 'Bad variable name',
+            test       => qr/^[a-zA-Z][\w:\-]*$/,
+            msgFail    => 'Bad attribute name',
+        },
         persistentStorageOptions => {
             keyTest    => qr/^\w+$/,
             keyMsgFail => 'Bad parameter',
@@ -1618,11 +1763,13 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
         portalDisplayAppslist       => { test => $perlExpr, },
         portalDisplayChangePassword => { test => $perlExpr, },
         portalDisplayLogout         => { test => $perlExpr, },
+        portalDisplayRegister       => $boolean,
         portalDisplayResetPassword  => $boolean,
         portalForceAuthn            => $boolean,
         portalOpenLinkInNewWindow   => $boolean,
         portalAntiFrame             => $boolean,
         portalParams                => $testNotDefined,
+        portalPingInterval          => $integer,
         portalRequireOldPassword    => $boolean,
         hideOldPassword             => $boolean,
         portalSkin                  => {
@@ -1648,7 +1795,12 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
             keyTest => qr/^(?:none|authentificate|manager|)$/,
             msgFail => 'must be one of none authentificate manager',
         },
-        reloadUrls => {
+        registerConfirmSubject => $testNotDefined,
+        registerDB             => $testNotDefined,
+        registerDoneSubject    => $testNotDefined,
+        registerTimeout        => $integer,
+        registerUrl            => $testNotDefined,
+        reloadUrls             => {
             keyTest => $domainNameOrIp,
             test    => Lemonldap::NG::Common::Regexp::HTTP_URI(),
             msgFail => 'Bad url'
@@ -1661,10 +1813,16 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
             keyTest    => qr/^[\w-]+$/,
             keyMsgFail => 'Invalid session data',
         },
-        singleSession  => $boolean,
-        singleIP       => $boolean,
-        singleUserByIP => $boolean,
-        slaveMasterIP  => {
+        singleSession     => $boolean,
+        singleIP          => $boolean,
+        singleUserByIP    => $boolean,
+        slaveExportedVars => {
+            keyTest    => qr/^!?[a-zA-Z][\w-]*$/,
+            keyMsgFail => 'Bad variable name',
+            test       => qr/^[a-zA-Z][\w:\-]*$/,
+            msgFail    => 'Bad attribute name',
+        },
+        slaveMasterIP => {
             test =>
               qr/^(\s*((\d{1,3}\.){3}\d{1,3}\s+)*(\d{1,3}\.){3}\d{1,3})?\s*$/,
             msgFail => 'Bad parameter "master\'s IP" in Slave',
@@ -1713,6 +1871,12 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
                 keyTest    => qr/^vhost(Port|Https|Maintenance|Aliases)$/,
                 keyMsgFail => 'Bad option name',
             },
+        },
+        webIDExportedVars => {
+            keyTest    => qr/^!?[a-zA-Z][\w-]*$/,
+            keyMsgFail => 'Bad variable name',
+            test       => qr/^[a-zA-Z][\w:\-]*$/,
+            msgFail    => 'Bad attribute name',
         },
         whatToTrace => $lmAttrOrMacro,
 
@@ -1832,7 +1996,8 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
             test    => Lemonldap::NG::Common::Regexp::HTTP_URI(),
             msgFail => 'Bad URI',
         },
-        samlRelayStateTimeout => $integer,
+        samlRelayStateTimeout      => $integer,
+        samlUseQueryStringSpecific => $boolean,
 
         # SSL
         SSLAuthnLevel => $integer,
@@ -1986,272 +2151,21 @@ m{^(?:ldapi://[^/]*/?|\w[\w\-\.]*(?::\d{1,5})?|ldap(?:s|\+tls)?://\w[\w\-\.]*(?:
         browserIdBackgroundColor => $testNotDefined,
     };
 }
-
-## @method protected hashref defaultConf()
-#@return Hashref of default values
-sub defaultConf {
-    my $self = shift;
-    return {
-        applicationList => {
-            'default' => { catname => 'Default category', type => "category" }
-        },
-        authentication         => 'LDAP',
-        authChoiceParam        => 'lmAuth',
-        captcha_login_enabled  => '0',
-        captcha_mail_enabled   => '0',
-        captcha_size           => '6',
-        captcha_data           => '/var/lib/lemonldap-ng/captcha/data',
-        captcha_output         => '/var/lib/lemonldap-ng/portal/captcha_output',
-        CAS_pgtFile            => '/tmp/pgt.txt',
-        casAccessControlPolicy => 'none',
-        cda                    => '0',
-        checkXSS               => '1',
-        cookieName             => 'lemonldap',
-        domain                 => 'example.com',
-        failedLoginNumber      => '5',
-        globalStorage          => 'Apache::Session::File',
-        hideOldPassword        => '0',
-        httpOnly               => '1',
-        https                  => '0',
-        issuerDBSAMLActivation => '0',
-        issuerDBSAMLPath       => '^/saml/',
-        issuerDBSAMLRule       => '1',
-        issuerDBCASActivation  => '0',
-        issuerDBCASPath        => '^/cas/',
-        issuerDBCASRule        => '1',
-        issuerDBOpenIDActivation => '0',
-        issuerDBOpenIDPath       => '^/openidserver/',
-        issuerDBOpenIDRule       => '1',
-        jsRedirect               => '0',
-        key      => join( '', map { chr( int( rand(94) ) + 33 ) } ( 1 .. 16 ) ),
-        ldapBase => 'dc=example,dc=com',
-        ldapPort => '389',
-        ldapPwdEnc                      => 'utf-8',
-        ldapUsePasswordResetAttribute   => '1',
-        ldapPasswordResetAttribute      => 'pwdReset',
-        ldapPasswordResetAttributeValue => 'TRUE',
-        ldapServer                      => 'localhost',
-        ldapTimeout                     => '120',
-        ldapVersion                     => '3',
-        mailCharset                     => 'utf-8',
-        mailOnPasswordChange            => '0',
-        maintenance                     => '0',
-        mailTimeout                     => '0',
-        mailSessionKey                  => 'mail',
-        managerDn                       => '',
-        managerPassword                 => '',
-        notification                    => '0',
-        notificationStorage             => 'File',
-        notificationWildcard            => 'allusers',
-        notifyDeleted                   => '1',
-        notifyOther                     => '0',
-        openIdSreg_fullname             => 'cn',
-        openIdSreg_nickname             => 'uid',
-        openIdSreg_timezone             => '_timezone',
-        openIdSreg_email                => 'mail',
-        portal                          => 'http://auth.example.com',
-        portalSkin                      => 'pastel',
-        portalUserAttr                  => '_user',
-        portalCheckLogins               => '1',
-        portalDisplayLoginHistory       => '1',
-        portalDisplayAppslist           => '1',
-        portalDisplayChangePassword => '$_auth eq "LDAP" or $_auth eq "DBI"',
-        portalDisplayLogout         => '1',
-        portalDisplayResetPassword  => '1',
-        portalAntiFrame             => '1',
-        protection                  => 'none',
-        radiusAuthnLevel            => '3',
-        remoteGlobalStorage => 'Lemonldap::NG::Common::Apache::Session::SOAP',
-        securedCookie       => '0',
-        secureTokenMemcachedServers => '127.0.0.1:11211',
-        secureTokenExpiration       => '60',
-        secureTokenAttribute        => 'uid',
-        secureTokenUrls             => '.*',
-        secureTokenHeader           => 'Auth-Token',
-        secureTokenAllowOnError     => '1',
-        singleSession               => '0',
-        singleIP                    => '0',
-        singleUserByIP              => '0',
-        Soap                        => '1',
-        storePassword               => '0',
-        successLoginNumber          => '5',
-        syslog                      => '',
-        timeout                     => '72000',
-        timeoutActivity             => '0',
-        trustedProxies              => '',
-        userControl                 => '^[\w\.\-@]+$',
-        userDB                      => 'LDAP',
-        passwordDB                  => 'LDAP',
-        useRedirectOnError          => '1',
-        useRedirectOnForbidden      => '0',
-        useSafeJail                 => '1',
-        vhostPort                   => '-1',
-        vhostHttps                  => '-1',
-        vhostMaintenance            => '0',
-        whatToTrace                 => '$_whatToTrace',
-        yubikeyPublicIDSize         => '12',
-        ########
-        # SAML #
-        ########
-        samlEntityID                       => '#PORTAL#' . '/saml/metadata',
-        samlOrganizationDisplayName        => 'Example',
-        samlOrganizationName               => 'Example',
-        samlOrganizationURL                => 'http://www.example.com',
-        samlIDPMetaDataOptionsNameIDFormat => '',
-        samlIDPMetaDataOptionsForceAuthn   => '0',
-        samlIDPMetaDataOptionsIsPassive    => '0',
-        samlIDPMetaDataOptionsAllowProxiedAuthn        => '1',
-        samlIDPMetaDataOptionsSSOBinding               => '',
-        samlIDPMetaDataOptionsSLOBinding               => '',
-        samlIDPMetaDataOptionsResolutionRule           => '',
-        samlIDPMetaDataOptionsAllowLoginFromIDP        => '1',
-        samlIDPMetaDataOptionsAdaptSessionUtime        => '1',
-        samlIDPMetaDataOptionsSignSSOMessage           => '1',
-        samlIDPMetaDataOptionsCheckSSOMessageSignature => '1',
-        samlIDPMetaDataOptionsSignSLOMessage           => '1',
-        samlIDPMetaDataOptionsCheckSLOMessageSignature => '1',
-        samlIDPMetaDataOptionsRequestedAuthnContext    => '',
-        samlIDPMetaDataOptionsForceUTF8                => '0',
-        samlIDPMetaDataOptionsEncryptionMode           => 'none',
-        samlIDPMetaDataOptionsCheckConditions          => '1',
-        samlSPMetaDataOptionsNameIDFormat              => '',
-        samlSPMetaDataOptionsOneTimeUse                => '0',
-        samlSPMetaDataOptionsSignSSOMessage            => '1',
-        samlSPMetaDataOptionsCheckSSOMessageSignature  => '1',
-        samlSPMetaDataOptionsSignSLOMessage            => '1',
-        samlSPMetaDataOptionsCheckSLOMessageSignature  => '1',
-        samlSPMetaDataOptionsEncryptionMode            => 'none',
-        samlSPSSODescriptorAuthnRequestsSigned         => '1',
-        samlSPSSODescriptorWantAssertionsSigned        => '1',
-        samlSPSSODescriptorSingleLogoutServiceHTTPRedirect =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect;'
-          . '#PORTAL#'
-          . '/saml/proxySingleLogout;'
-          . '#PORTAL#'
-          . '/saml/proxySingleLogoutReturn',
-        samlSPSSODescriptorSingleLogoutServiceHTTPPost =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST;'
-          . '#PORTAL#'
-          . '/saml/proxySingleLogout;'
-          . '#PORTAL#'
-          . '/saml/proxySingleLogoutReturn',
-        samlSPSSODescriptorSingleLogoutServiceSOAP =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:SOAP;'
-          . '#PORTAL#'
-          . '/saml/proxySingleLogoutSOAP;',
-        samlSPSSODescriptorAssertionConsumerServiceHTTPArtifact =>
-          '1;0;urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact;'
-          . '#PORTAL#'
-          . '/saml/proxySingleSignOnArtifact',
-        samlSPSSODescriptorAssertionConsumerServiceHTTPPost =>
-          '0;1;urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST;'
-          . '#PORTAL#'
-          . '/saml/proxySingleSignOnPost',
-        samlSPSSODescriptorArtifactResolutionServiceArtifact =>
-          '1;0;urn:oasis:names:tc:SAML:2.0:bindings:SOAP;'
-          . '#PORTAL#'
-          . '/saml/artifact',
-        samlIDPSSODescriptorWantAuthnRequestsSigned => '1',
-        samlIDPSSODescriptorSingleSignOnServiceHTTPRedirect =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect;'
-          . '#PORTAL#'
-          . '/saml/singleSignOn;',
-        samlIDPSSODescriptorSingleSignOnServiceHTTPPost =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST;'
-          . '#PORTAL#'
-          . '/saml/singleSignOn;',
-        samlIDPSSODescriptorSingleSignOnServiceHTTPArtifact =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact;'
-          . '#PORTAL#'
-          . '/saml/singleSignOnArtifact;',
-        samlIDPSSODescriptorSingleSignOnServiceSOAP =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:SOAP;'
-          . '#PORTAL#'
-          . '/saml/singleSignOnSOAP;',
-        samlIDPSSODescriptorSingleLogoutServiceHTTPRedirect =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect;'
-          . '#PORTAL#'
-          . '/saml/singleLogout;'
-          . '#PORTAL#'
-          . '/saml/singleLogoutReturn',
-        samlIDPSSODescriptorSingleLogoutServiceHTTPPost =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST;'
-          . '#PORTAL#'
-          . '/saml/singleLogout;'
-          . '#PORTAL#'
-          . '/saml/singleLogoutReturn',
-        samlIDPSSODescriptorSingleLogoutServiceSOAP =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:SOAP;'
-          . '#PORTAL#'
-          . '/saml/singleLogoutSOAP;',
-        samlIDPSSODescriptorArtifactResolutionServiceArtifact =>
-          '1;0;urn:oasis:names:tc:SAML:2.0:bindings:SOAP;'
-          . '#PORTAL#'
-          . '/saml/artifact',
-        samlNameIDFormatMapEmail    => 'mail',
-        samlNameIDFormatMapX509     => 'mail',
-        samlNameIDFormatMapWindows  => 'uid',
-        samlNameIDFormatMapKerberos => 'uid',
-        samlAttributeAuthorityDescriptorAttributeServiceSOAP =>
-          'urn:oasis:names:tc:SAML:2.0:bindings:SOAP;'
-          . '#PORTAL#'
-          . '/saml/AA/SOAP;',
-        samlServicePrivateKeySig                      => '',
-        samlServicePrivateKeySigPwd                   => '',
-        samlServicePublicKeySig                       => '',
-        samlServicePrivateKeyEnc                      => '',
-        samlServicePrivateKeyEncPwd                   => '',
-        samlServicePublicKeyEnc                       => '',
-        samlMetadataForceUTF8                         => 1,
-        samlAuthnContextMapPassword                   => 2,
-        samlAuthnContextMapPasswordProtectedTransport => 3,
-        samlAuthnContextMapTLSClient                  => 5,
-        samlAuthnContextMapKerberos                   => 4,
-        samlCommonDomainCookieActivation              => 0,
-        samlRelayStateTimeout                         => 600,
-
-        # Authentication levels
-        ldapAuthnLevel      => 2,
-        dbiAuthnLevel       => 2,
-        SSLAuthnLevel       => 5,
-        CAS_authnLevel      => 1,
-        googleAuthnLevel    => 1,
-        openIdAuthnLevel    => 1,
-        facebookAuthnLevel  => 1,
-        twitterAuthnLevel   => 1,
-        webIDAuthnLevel     => 1,
-        apacheAuthnLevel    => 4,
-        nullAuthnLevel      => 0,
-        slaveAuthnLevel     => 2,
-        yubikeyAuthnLevel   => 3,
-        browserIdAuthnLevel => 1,
-
-    };
-}
-
+## @method hashref subDefaultConf()
+# Return the default values of subattributes
+# @return hash ref { subattribute name => default value }
 sub subDefaultConf {
-    return {
-        exportedHeaders => { 'Auth-User' => '$uid' },
-        exportedVars => { cn => 'cn', mail => 'mail', uid => 'uid', },
-        globalStorageOptions => {
-            'Directory'     => '/var/lib/lemonldap-ng/sessions/',
-            'LockDirectory' => '/var/lib/lemonldap-ng/sessions/lock/'
-        },
-        locationRules => { default => 'deny' },
-        macros        => {
-            '_whatToTrace' =>
-              '$_auth eq "SAML" ? "$_user\\@$_idpConfKey" : "$_user"'
-        },
-        notificationStorageOptions =>
-          { dirName => '/var/lib/lemonldap-ng/notifications', },
-        post                       => { none => { expr => {}, }, },
-        remoteGlobalStorageOptions => {
-            'proxy' => 'https://remote/index.pl/sessions',
-            'ns'    => 'https://remote/Lemonldap/NG/Common/CGI/SOAPService',
-        },
-        samlIDPMetaDataExportedAttributes => { 'uid' => '0;uid;;' },
-        samlSPMetaDataExportedAttributes  => { 'uid' => '0;uid;;' },
-    };
+    my ($self) = splice @_;
+    my $h;
+
+    my $confSubAttributes = Lemonldap::NG::Common::Conf::SubAttributes->new();
+    my @attributes        = $confSubAttributes->meta()->get_attribute_list();
+
+    foreach my $name (@attributes) {
+        $h->{$name} = $confSubAttributes->$name;
+    }
+
+    return $h;
 }
 
 ## @method hashref globalTests(hashref conf)
@@ -2429,7 +2343,7 @@ sub globalTests {
         testApacheSession => sub {
             my ( $id, %h );
             return 1
-              if ( $Lemonldap::NG::Handler::CGI::globalStorage eq
+              if ( $Lemonldap::NG::Handler::_CGI::tsv->{globalStorage} eq
                    $conf->{globalStorage}
                 or $conf->{globalStorage} eq
                 'Lemonldap::NG::Common::Apache::Session::SOAP' );
@@ -2453,7 +2367,7 @@ sub globalTests {
               unless ( $h{a} == 1 );
             eval { tied(%h)->delete; };
             return ( -1, "Unable to delete session ($@)" ) if ($@);
-            my $gc = $Lemonldap::NG::Handler::CGI::globalStorage;
+            my $gc = $Lemonldap::NG::Handler::_CGI::tsv->{globalStorage};
             return ( -1,
 'All sessions may be lost and you <b>must</b> restart all your Apache servers'
             ) if ( $conf->{globalStorage} ne $gc );
@@ -2465,7 +2379,7 @@ sub globalTests {
             return (
                 1,
                 (
-                    $Lemonldap::NG::Handler::CGI::cookieName ne
+                    $Lemonldap::NG::Handler::_CGI::tsv->{cookieName} ne
                       $conf->{cookieName}
                     ? 'Cookie name has changed, you <b>must</b> restart all your Apache servers'
                     : ()
@@ -2551,7 +2465,9 @@ sub globalTests {
                         )
                       )
                     {
-                        my $v = $self->defaultConf()->{$k};
+                        my $confAttributes =
+                          Lemonldap::NG::Common::Conf::Attributes->new();
+                        my $v = $confAttributes->$k;
                         if ( defined($v) and $conf->{$k} eq $v ) {
                             delete $conf->{$k};
                         }

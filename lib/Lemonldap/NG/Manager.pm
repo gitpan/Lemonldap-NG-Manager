@@ -10,7 +10,7 @@ use Lemonldap::NG::Handler::CGI qw(:globalStorage :locationRules);    #inherits
 use Lemonldap::NG::Common::Conf;              #link protected conf Configuration
 use Lemonldap::NG::Common::Conf::Constants;   #inherits
 
-our $VERSION = '1.3.3';
+our $VERSION = '1.4.0';
 our @ISA     = qw(
   Lemonldap::NG::Handler::CGI
   Lemonldap::NG::Manager::Downloader
@@ -104,10 +104,8 @@ sub new {
 
     # Else load conf
     require Lemonldap::NG::Manager::Downloader;     #inherits
-    $self->{cfgNum} =
-         $self->param('cfgNum')
-      || $self->confObj->lastCfg()
-      || 'UNAVAILABLE';
+    $self->{cfgNum} = $self->param('cfgNum')
+      || $self->confObj->lastCfg();
 
     if ( my $p = $self->param('node') ) {
 
@@ -133,7 +131,7 @@ sub menu {
     my $self = shift;
     require Lemonldap::NG::Manager::Downloader;
     return
-        '<ul class="simpleTree">' 
+        '<ul class="simpleTree">'
       . $self->li( 'root', 'root' )
       . $self->span(
         id   => 'root',

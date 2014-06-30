@@ -20,7 +20,7 @@ use Lemonldap::NG::Manager::_i18n;
 use Lemonldap::NG::Manager::Request;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 
-our $VERSION = '1.3.3';
+our $VERSION = '1.4.0';
 our ( $stylesheet, $parser );
 
 ## @method void confUpload(ref rdata)
@@ -52,11 +52,10 @@ sub confUpload {
       ->documentElement();
 
     # 1.2 Get configuration number
-    unless ( $self->{cfgNum} =
-        $result->getChildrenByTagName('conf')->[0]->getAttribute('value') )
-    {
-        die "No configuration number found";
-    }
+    $self->{cfgNum} =
+      $result->getChildrenByTagName('conf')->[0]->getAttribute('value');
+    die "No configuration number found" unless defined $self->{cfgNum};
+
     my $newConf = { cfgNum => $self->{cfgNum} };
     my $errors = {};
 
@@ -332,7 +331,11 @@ s/^(samlSPMetaDataXML|samlSPMetaDataExportedAttributes|samlSPMetaDataOptions)\/(
             $self->setKeyToH(
                 $newConf, $confKey,
                 $test->{keyTest}
-                ? ( ( $id !~ /\// or $test->{'*'} ) ? {} : ( $name => $value ) )
+                ? (
+                      ( $id !~ /\// or $test->{'*'} )
+                    ? {}
+                    : ( $name => $value )
+                  )
                 : $value
             );
         }
@@ -347,7 +350,6 @@ s/^(samlSPMetaDataXML|samlSPMetaDataExportedAttributes|samlSPMetaDataOptions)\/(
         foreach my $k ( $self->findAllConfKeys( $self->corresp($node) ) ) {
             $self->lmLog( "Unchanged key $k (node $node)", 'debug' );
             my $v = $self->keyToH( $k, $self->conf );
-            $v = $self->keyToH( $k, $self->defaultConf ) unless ( defined $v );
             if ( defined $v ) {
                 $self->setKeyToH( $newConf, $k, $v );
             }

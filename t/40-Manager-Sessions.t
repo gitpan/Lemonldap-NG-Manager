@@ -7,7 +7,28 @@
 
 use Test::More tests => 1;
 use strict;
-BEGIN { use_ok('Lemonldap::NG::Manager::Sessions') }
+use Cwd 'abs_path';
+use File::Basename;
+use File::Temp;
+
+my $ini = File::Temp->new();
+my $dir = dirname( abs_path($0) );
+
+print $ini "[all]
+
+[configuration]
+type=File
+dirName=$dir
+";
+
+$ini->flush();
+
+use Env qw(LLNG_DEFAULTCONFFILE);
+$LLNG_DEFAULTCONFFILE = $ini->filename;
+
+use_ok('Lemonldap::NG::Manager::Sessions');
+
+$LLNG_DEFAULTCONFFILE = undef;
 
 #########################
 
