@@ -112,15 +112,38 @@ $(document).ready(function() {
 	jQuery.event.add(window, "resize", resizeMenu);
 
 	/* Buttons */
-	$('#header a').button({
+	$('#header a.configuration').button({
+		icons: {
+			primary: "ui-icon-document"
+		}
+	});
+	$('#header a.sessions').button({
+		icons: {
+			primary: "ui-icon-key"
+		}
+	});
+	$('#header a.notifications').button({
+		icons: {
+			primary: "ui-icon-calendar"
+		}
+	});
+	$('#header a.portal').button({
 		icons: {
 			primary: "ui-icon-home"
-		}
+		},
+		text: false
+	});
+	$('#header a.logout').button({
+		icons: {
+			primary: "ui-icon-power"
+		},
+		text: false
 	});
 	$('#header span#css-switch-link').button({
 		icons: {
 			primary: "ui-icon-image"
-		}
+		},
+		text: false
 	});
 	$('#css-switch button[alt=tree]').button({
 		icons: {

@@ -25,7 +25,7 @@ use utf8;
 #our $whatToTrace;
 #*whatToTrace = \$Lemonldap::NG::Handler::_CGI::whatToTrace;
 
-our $VERSION = '1.4.0';
+our $VERSION = '1.4.1';
 
 our @ISA = qw(
   Lemonldap::NG::Handler::CGI
@@ -47,6 +47,11 @@ sub new {
       or Lemonldap::NG::Handler::CGI->abort( 'Unable to get configuration',
         $Lemonldap::NG::Common::Conf::msg );
 
+    if ( my $globalconf = $conf->getConf() ) {
+        $args->{$_} ||= $globalconf->{$_}
+          foreach (qw/portal hiddenAttributes /);
+    }
+
     # Configuration from MANAGER section
     if ( my $localconf = $conf->getLocalConf(MANAGERSECTION) ) {
         $args->{$_} ||= $localconf->{$_} foreach ( keys %$localconf );
@@ -66,14 +71,6 @@ sub new {
 
     # Load default skin if no other specified
     $self->{managerSkin} ||= 'default';
-
-    # Now try to load Apache::Session module
-    #unless ( $tsv->{globalStorage}->can('populate') ) {
-    #    eval "require $tsv->{globalStorage}";
-    #    $class->abort( "Unable to load $tsv->{globalStorage}", $@ ) if ($@);
-    #}
-    #%{ $self->{globalStorageOptions} } = %{$tsv->{globalStorageOptions}};
-    #$self->{globalStorageOptions}->{backend} = $tsv->{globalStorage};
 
     # IP field
     $self->{ipField} = "ipAddr";
@@ -371,8 +368,9 @@ sub delete {
         }
     );
 
-    unless ( $apacheSession->data ) {
-        $self->lmLog( "Apache::Session error", 'error' );
+    if ( $apacheSession->error ) {
+        $self->lmLog( "Unable to open session $id", 'error' );
+        $self->lmLog( $apacheSession->error,        'error' );
         $res .= '<h1 class="ui-widget-header ui-corner-all">'
           . $self->translate('error') . '</h1>';
         $res .= '<div class="ui-corner-all ui-widget-content">';
@@ -395,8 +393,15 @@ sub delete {
                 }
             );
 
-            if ( &apacheSession2->data ) {
-                $apacheSession2->remove;
+            if ( $apacheSession2->data ) {
+                unless ( $apacheSession2->remove ) {
+                    $self->lmLog( "Unable to remove session $id2", 'error' );
+                    $self->lmLog( $apacheSession2->error,          'error' );
+                }
+            }
+            else {
+                $self->lmLog( "Unable to open session $id2", 'error' );
+                $self->lmLog( $apacheSession2->error,        'error' );
             }
         }
 
@@ -407,6 +412,7 @@ sub delete {
         }
         else {
             $self->lmLog( "Unable to remove session $id", 'error' );
+            $self->lmLog( $apacheSession->error,          'error' );
             $res .= '<h1 class="ui-widget-header ui-corner-all">'
               . $self->translate('error') . '</h1>';
             $res .= '<div class="ui-corner-all ui-widget-content">';
@@ -436,9 +442,9 @@ sub session {
         }
     );
 
-    unless ( $apacheSession->data ) {
-
-        $self->lmLog( "Apache::Session error", 'error' );
+    if ( $apacheSession->error ) {
+        $self->lmLog( "Unable to open session $id", 'error' );
+        $self->lmLog( $apacheSession->error,        'error' );
         $res .= '<h1 class="ui-widget-header ui-corner-all">'
           . $self->translate('error') . '</h1>';
         $res .= '<div class="ui-corner-all ui-widget-content">';
