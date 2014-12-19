@@ -1,33 +1,33 @@
 ---
-abstract: 'Perl extension for managing Lemonldap::NG Web-SSO'
+abstract: 'Perl extension for managing Lemonldap::NG Web-SSO system.'
 author:
   - 'Xavier Guimard <x.guimard@free.fr>, Clément Oudot <clement@oodo.net>, Thomas Chemineau <thomas.chemineau@gmail.com>'
 build_requires:
-  IO::String: 0
-  Test::Pod: 1
+  IO::String: '0'
+  Test::Pod: '1'
 configure_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: '0'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.120921'
+generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.142060'
 license: open_source
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: Lemonldap-NG-Manager
 no_index:
   directory:
     - t
     - inc
 requires:
-  Convert::PEM: 0
-  Crypt::OpenSSL::RSA: 0
-  HTML::Template: 0
-  JSON: 0
-  LWP: 0
-  Lemonldap::NG::Common: v1.4.2
-  Lemonldap::NG::Handler: v1.4.2
-  URI: 0
-  XML::LibXML: 0
-  XML::LibXSLT: 0
-version: v1.4.2
+  Convert::PEM: '0'
+  Crypt::OpenSSL::RSA: '0'
+  HTML::Template: '0'
+  JSON: '0'
+  LWP: '0'
+  Lemonldap::NG::Common: v1.4.3
+  Lemonldap::NG::Handler: v1.4.3
+  URI: '0'
+  XML::LibXML: '0'
+  XML::LibXSLT: '0'
+version: v1.4.3
 x_LWP::Protocol::https: 0
